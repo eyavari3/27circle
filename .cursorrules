@@ -1,0 +1,14 @@
+# Cursor Rules for 27circle-july
+[project]
+framework = "nextjs"
+language = "typescript"
+css = "tailwind"
+
+[lint]
+prefer_eslint = true
+
+[format]
+prefer_prettier = true
+
+[tailwind]
+custom_theme = true 
