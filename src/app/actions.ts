@@ -11,7 +11,7 @@ export async function saveUserInterests(interests: string[]): Promise<{ error: s
     return { error: 'Please select at least one interest to continue.' };
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {

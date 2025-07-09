@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+**/*.tsx, **/*.ts, **/*.jsx, **/*.js, tailwind.config.ts, **/*.css, tsconfig.json, next.config.mjs, **/*.md, .cursorrules

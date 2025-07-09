@@ -1,39 +1,11 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TimeSlotWithUserStatus, CircleData } from "@/lib/types";
+import { getCurrentPSTTime, getDisplayDate, createTimeSlots, getDayBoundaries } from "@/lib/time";
 import CirclesClient from "./CirclesClient";
 
-function getDisplayDate(currentTime: Date): Date {
-  const displayDate = new Date(currentTime);
-  
-  if (currentTime.getHours() >= 20) {
-    displayDate.setDate(displayDate.getDate() + 1);
-  }
-  
-  displayDate.setHours(0, 0, 0, 0);
-  return displayDate;
-}
-
-function createTimeSlots(displayDate: Date): Array<{ time: Date; deadline: Date }> {
-  const baseDate = new Date(displayDate);
-  return [
-    {
-      time: new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 11, 0, 0, 0),
-      deadline: new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 10, 0, 0, 0)
-    },
-    {
-      time: new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 14, 0, 0, 0),
-      deadline: new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 13, 0, 0, 0)
-    },
-    {
-      time: new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 17, 0, 0, 0),
-      deadline: new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 16, 0, 0, 0)
-    }
-  ];
-}
-
 export default async function CirclesPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();
   
@@ -61,13 +33,10 @@ export default async function CirclesPage() {
   //   redirect("/onboarding/curiosity-1");
   // }
   
-  const currentTime = new Date();
-  const pstTime = new Date(currentTime.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
-  const displayDate = getDisplayDate(pstTime);
-  const timeSlots = createTimeSlots(new Date(displayDate));
-  
-  const startOfDay = new Date(displayDate);
-  startOfDay.setHours(0, 0, 0, 0);
+  const currentTime = getCurrentPSTTime();
+  const displayDate = getDisplayDate(currentTime);
+  const timeSlots = createTimeSlots(displayDate);
+  const { start: startOfDay } = getDayBoundaries(displayDate);
   
   // For development: Skip database queries if no auth
   let waitlistEntries = null;
@@ -115,11 +84,14 @@ export default async function CirclesPage() {
   
   const timeSlotsWithStatus: TimeSlotWithUserStatus[] = timeSlots.map(slot => {
     const slotTimeStr = slot.time.toISOString();
-    const isOnWaitlist = userWaitlistTimes.has(slotTimeStr);
-    const userCircle = userCircles.get(slotTimeStr);
+    const isOnWaitlist = user ? userWaitlistTimes.has(slotTimeStr) : false;
+    const userCircle = user ? userCircles.get(slotTimeStr) : undefined;
     
     return {
-      timeSlot: slot,
+      timeSlot: {
+        time: slot.time,
+        deadline: slot.deadline
+      },
       isOnWaitlist,
       assignedCircleId: userCircle?.circleId || null,
       circleData: userCircle?.circleData || null,

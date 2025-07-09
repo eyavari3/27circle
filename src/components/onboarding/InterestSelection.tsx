@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { saveUserInterests } from "@/app/onboarding/actions";
+import { saveUserInterests, ensureDevProfile } from "@/app/onboarding/actions";
 
 interface Option {
   interestKey: string;
@@ -50,6 +50,12 @@ export default function InterestSelection({
     setLoading(true);
     setError("");
     const result = await saveUserInterests(selected);
+    
+    // In development, ensure basic profile exists when going to circles
+    if (process.env.NODE_ENV === 'development' && nextPageUrl === '/circles') {
+      await ensureDevProfile();
+    }
+    
     setLoading(false);
     if (result.error) {
       setError(result.error);

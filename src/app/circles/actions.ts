@@ -2,9 +2,12 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { getCurrentPSTTime, parseTimeSlotString, isValidTimeSlot, createTimeSlots, getDisplayDate } from "@/lib/time";
+import { db } from "@/lib/database/client";
+import { ApiResponse } from "@/lib/database/types";
 
 export async function joinWaitlist(timeSlot: string): Promise<{ error: string | null }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   // For development: Skip database operations if no auth
@@ -16,14 +19,26 @@ export async function joinWaitlist(timeSlot: string): Promise<{ error: string | 
     return { error: null };
   }
 
-  const timeSlotDate = new Date(timeSlot);
-  const now = new Date();
-  const pstNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+  // Validate time slot using centralized time system
+  if (!isValidTimeSlot(timeSlot)) {
+    return { error: "Invalid time slot." };
+  }
   
-  const deadline = new Date(timeSlotDate);
-  deadline.setHours(deadline.getHours() - 1);
+  const timeSlotDate = parseTimeSlotString(timeSlot);
+  const currentTime = getCurrentPSTTime();
   
-  if (pstNow >= deadline) {
+  // Find the matching slot from today's slots to get the deadline
+  const todaySlots = createTimeSlots(getDisplayDate(currentTime));
+  const matchingSlot = todaySlots.find(slot => 
+    slot.time.getTime() === timeSlotDate.getTime()
+  );
+  
+  if (!matchingSlot) {
+    return { error: "Time slot not found." };
+  }
+  
+  // Check if deadline has passed
+  if (currentTime >= matchingSlot.deadline) {
     return { error: "The deadline to join this circle has passed." };
   }
 
@@ -47,7 +62,7 @@ export async function joinWaitlist(timeSlot: string): Promise<{ error: string | 
 }
 
 export async function leaveWaitlist(timeSlot: string): Promise<{ error: string | null }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   // For development: Skip database operations if no auth
@@ -59,14 +74,26 @@ export async function leaveWaitlist(timeSlot: string): Promise<{ error: string |
     return { error: null };
   }
 
-  const timeSlotDate = new Date(timeSlot);
-  const now = new Date();
-  const pstNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+  // Validate time slot using centralized time system
+  if (!isValidTimeSlot(timeSlot)) {
+    return { error: "Invalid time slot." };
+  }
   
-  const deadline = new Date(timeSlotDate);
-  deadline.setHours(deadline.getHours() - 1);
+  const timeSlotDate = parseTimeSlotString(timeSlot);
+  const currentTime = getCurrentPSTTime();
   
-  if (pstNow >= deadline) {
+  // Find the matching slot from today's slots to get the deadline
+  const todaySlots = createTimeSlots(getDisplayDate(currentTime));
+  const matchingSlot = todaySlots.find(slot => 
+    slot.time.getTime() === timeSlotDate.getTime()
+  );
+  
+  if (!matchingSlot) {
+    return { error: "Time slot not found." };
+  }
+  
+  // Check if deadline has passed
+  if (currentTime >= matchingSlot.deadline) {
     return { error: "The deadline has passed. You cannot leave this waitlist." };
   }
 
