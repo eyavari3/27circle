@@ -1,3 +1,5 @@
+import SplashScreen from "@/components/onboarding/SplashScreen";
+
 export default function Home() {
-  return <main>Hello, World.</main>;
+  return <SplashScreen />;
 }

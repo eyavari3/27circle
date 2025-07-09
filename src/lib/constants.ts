@@ -1,0 +1,7 @@
+export const APP_TIME_OFFSET: number | null = 21;
+
+//  Change the APP_TIME_OFFSET value:
+//  null = real PST time
+//  14.5 = 2:30 PM today
+// - 10 = 10:00 AM today
+// - 16 = 4:00 PM today

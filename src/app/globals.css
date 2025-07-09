@@ -44,3 +44,12 @@ a {
     color-scheme: dark;
   }
 }
+
+/* Custom glow effects */
+.drop-shadow-glow-blue {
+  filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5));
+}
+
+.drop-shadow-glow-yellow {
+  filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.6));
+}
