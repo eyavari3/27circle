@@ -1,28 +1,56 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useCurrentTime } from "@/lib/hooks/useCurrentTime";
+import { useState, useEffect } from "react";
+import { getCircleLocation } from "@/app/circles/location-actions";
+import { getMapUrl, getNavigationUrl } from "@/lib/maps";
+import { Location } from "@/lib/types";
+import Image from "next/image";
 
 export default function UpcomingCirclePage() {
   const params = useParams();
   const router = useRouter();
-  const currentTime = useCurrentTime();
+  const [location, setLocation] = useState<Location | null>(null);
+  const [spark, setSpark] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  // Mock data - in real app this would come from the database based on circleId
+  // Fetch circle data based on circleId
+  useEffect(() => {
+    async function fetchCircleData() {
+      if (!params.circleId || typeof params.circleId !== 'string') {
+        setError('Invalid circle ID');
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const result = await getCircleLocation(params.circleId);
+        if (result.error) {
+          setError(result.error);
+        } else {
+          setLocation(result.location);
+          setSpark(result.spark);
+        }
+      } catch (err) {
+        console.error('Error fetching circle data:', err);
+        setError('Failed to load circle information');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchCircleData();
+  }, [params.circleId]);
+  
+  // Mock data fallback for development
   const circleData = {
     timeSlot: "02:00 PM - 02:20 PM",
-    spark: "What's one of the major problems that you see on campus?",
-    location: "Stanford University - Old Union",
+    spark: spark || "What's one of the major problems that you see on campus?",
+    location: location?.name ? `Stanford University - ${location.name}` : "Stanford University - Old Union",
     mapUrl: "/api/placeholder/map" // This would be a real map in production
   };
 
-  const formatAppTime = (time: Date) => {
-    return time.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true
-    });
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -79,39 +107,90 @@ export default function UpcomingCirclePage() {
             </div>
             <div>
               <h3 className="font-semibold text-gray-900">{circleData.location}</h3>
-              <button className="text-sm text-blue-600 underline mt-1">
-                View the exact spot
-              </button>
+              {location ? (
+                <button 
+                  onClick={() => {
+                    const navUrl = getNavigationUrl(location);
+                    window.open(navUrl, '_blank');
+                  }}
+                  className="text-sm text-blue-600 underline mt-1 hover:text-blue-800 transition-colors"
+                >
+                  View the exact spot
+                </button>
+              ) : (
+                <span className="text-sm text-gray-400 mt-1">
+                  Loading location...
+                </span>
+              )}
             </div>
           </div>
           
           {/* Map Container */}
           <div className="relative h-48 bg-gray-200 rounded-lg overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-100 to-green-200">
-              {/* Stanford Campus Representation */}
-              <div className="absolute top-4 left-4 w-16 h-12 bg-green-600 rounded opacity-80"></div>
-              <div className="absolute top-8 right-6 w-20 h-16 bg-green-700 rounded opacity-70"></div>
-              <div className="absolute bottom-6 left-8 w-12 h-8 bg-green-500 rounded opacity-90"></div>
-              
-              {/* Roads */}
-              <div className="absolute top-0 left-1/2 w-1 h-full bg-gray-400 transform -translate-x-1/2"></div>
-              <div className="absolute top-1/2 left-0 w-full h-1 bg-gray-400 transform -translate-y-1/2"></div>
-              
-              {/* Old Union Marker */}
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                <div className="relative">
-                  <div className="w-6 h-6 bg-red-500 rounded-full border-2 border-white shadow-lg"></div>
-                  <div className="absolute -bottom-1 left-1/2 w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent border-t-red-500 transform -translate-x-1/2"></div>
+            {isLoading ? (
+              /* Loading state */
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <p className="text-sm text-gray-600">Loading map...</p>
                 </div>
               </div>
-              
-              {/* Location Labels */}
-              <div className="absolute top-2 left-2 text-xs font-medium text-gray-700">Panama Mall</div>
-              <div className="absolute bottom-2 right-2 text-xs font-medium text-gray-700">Stanford University Bookstore</div>
-              <div className="absolute top-1/3 left-1/4 text-xs font-medium text-white bg-red-500 px-2 py-1 rounded shadow">
-                Old Union
+            ) : location && !error ? (
+              /* Real Google Maps */
+              <>
+                <Image 
+                  src={getMapUrl(location, 400)}
+                  alt={`${location.name} at Stanford`}
+                  fill
+                  className="object-cover object-center"
+                  sizes="400px"
+                />
+                
+                {/* Clickable overlay for navigation */}
+                <button
+                  onClick={() => {
+                    const navUrl = getNavigationUrl(location);
+                    window.open(navUrl, '_blank');
+                  }}
+                  className="absolute inset-0 bg-transparent hover:bg-black/10 transition-colors"
+                  aria-label={`Open ${location.name} in Google Maps`}
+                />
+                
+                {/* Location Label */}
+                <div className="absolute bottom-2 left-2 right-2">
+                  <div className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-lg border border-gray-200">
+                    <span className="text-xs font-medium text-gray-800">{location.name}</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Fallback display */
+              <div className="absolute inset-0 bg-gradient-to-br from-green-100 to-green-200">
+                {/* Stanford Campus Representation */}
+                <div className="absolute top-4 left-4 w-16 h-12 bg-green-600 rounded opacity-80"></div>
+                <div className="absolute top-8 right-6 w-20 h-16 bg-green-700 rounded opacity-70"></div>
+                <div className="absolute bottom-6 left-8 w-12 h-8 bg-green-500 rounded opacity-90"></div>
+                
+                {/* Roads */}
+                <div className="absolute top-0 left-1/2 w-1 h-full bg-gray-400 transform -translate-x-1/2"></div>
+                <div className="absolute top-1/2 left-0 w-full h-1 bg-gray-400 transform -translate-y-1/2"></div>
+                
+                {/* Old Union Marker */}
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                  <div className="relative">
+                    <div className="w-6 h-6 bg-red-500 rounded-full border-2 border-white shadow-lg"></div>
+                    <div className="absolute -bottom-1 left-1/2 w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent border-t-red-500 transform -translate-x-1/2"></div>
+                  </div>
+                </div>
+                
+                {/* Location Labels */}
+                <div className="absolute top-2 left-2 text-xs font-medium text-gray-700">Panama Mall</div>
+                <div className="absolute bottom-2 right-2 text-xs font-medium text-gray-700">Stanford University Bookstore</div>
+                <div className="absolute top-1/3 left-1/4 text-xs font-medium text-white bg-red-500 px-2 py-1 rounded shadow">
+                  Old Union
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

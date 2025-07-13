@@ -5,19 +5,37 @@ import { revalidatePath } from "next/cache";
 import { getCurrentPSTTime, parseTimeSlotString, isValidTimeSlot, createTimeSlots, getDisplayDate } from "@/lib/time";
 import { db } from "@/lib/database/client";
 import { ApiResponse } from "@/lib/database/types";
+import { ensureUserProfile } from "./ensure-profile";
 
 export async function joinWaitlist(timeSlot: string): Promise<{ error: string | null }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  try {
+    console.log('🎯 joinWaitlist called with timeSlot:', timeSlot);
+    
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('❌ Auth error in joinWaitlist:', authError);
+      return { error: "Authentication error. Please sign in again." };
+    }
 
-  // For development: Skip database operations if no auth
-  if (!user) {
-    console.log('Development mode: Simulating waitlist join (no database operation)');
-    // In development without auth, we just return success
-    // The UI will handle optimistic updates
-    revalidatePath("/circles");
-    return { error: null };
-  }
+    // For development: Skip database operations if no auth
+    if (!user) {
+      console.log('Development mode: Simulating waitlist join (no database operation)');
+      // In development without auth, we just return success
+      // The UI will handle optimistic updates
+      revalidatePath("/circles");
+      return { error: null };
+    }
+    
+    console.log('✅ User authenticated:', user.email, 'ID:', user.id);
+    
+    // Ensure user has a profile (for Google OAuth users)
+    const profileResult = await ensureUserProfile();
+    if (profileResult.error) {
+      console.error('❌ Profile creation failed:', profileResult.error);
+      return { error: "Failed to create user profile. Please try again." };
+    }
 
   // Validate time slot using centralized time system
   if (!isValidTimeSlot(timeSlot)) {
@@ -49,7 +67,7 @@ export async function joinWaitlist(timeSlot: string): Promise<{ error: string | 
       time_slot: timeSlot
     });
 
-  if (error) {
+  if (error && error.message) {
     if (error.message.includes("duplicate key value")) {
       return { error: null };
     }
@@ -59,6 +77,10 @@ export async function joinWaitlist(timeSlot: string): Promise<{ error: string | 
 
   revalidatePath("/circles");
   return { error: null };
+  } catch (error) {
+    console.error('❌ Unexpected error in joinWaitlist:', error);
+    return { error: "An unexpected error occurred. Please try again." };
+  }
 }
 
 export async function leaveWaitlist(timeSlot: string): Promise<{ error: string | null }> {

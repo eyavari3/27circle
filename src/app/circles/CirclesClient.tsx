@@ -12,8 +12,11 @@ import {
   createTimeSlots
 } from "@/lib/time";
 import { joinWaitlist, leaveWaitlist } from "@/app/circles/actions";
+import { getTodaysMainLocation } from "@/app/circles/location-actions";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { getMapUrl, getNavigationUrl } from "@/lib/maps";
+import { Location } from "@/lib/types";
 
 interface CirclesClientProps {
   initialTimeSlots: TimeSlotWithUserStatus[];
@@ -26,10 +29,31 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
   const [isLoaded, setIsLoaded] = useState(false);
   const [lastDisplayDate, setLastDisplayDate] = useState<Date | null>(null);
   const [justReset, setJustReset] = useState(false);
+  const [location, setLocation] = useState<Location | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const router = useRouter();
 
   // Check for pending feedback and redirect if necessary
   const { currentFeedbackWindow } = useFeedbackCheck('dev-user-id');
+
+  // Fetch today's main location for map display
+  useEffect(() => {
+    async function fetchLocation() {
+      try {
+        const result = await getTodaysMainLocation();
+        if (result.error) {
+          setLocationError(result.error);
+        } else {
+          setLocation(result.location);
+        }
+      } catch (error) {
+        console.error('Error fetching location:', error);
+        setLocationError('Failed to load location');
+      }
+    }
+    
+    fetchLocation();
+  }, []);
 
   // Load persisted waitlist state from localStorage on mount
   useEffect(() => {
@@ -441,41 +465,75 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
             </svg>
             <div className="text-[3.2vw] min-text-xs max-text-sm">
               <span className="font-medium text-gray-900">Approximate Area:</span>
-              <span className="text-gray-700 ml-1">Old Union</span>
+              <span className="text-gray-700 ml-1">{location?.name || 'Old Union'}</span>
             </div>
           </div>
           <p className="text-[2.8vw] min-text-xs max-text-sm text-gray-600 mb-[1.5vh]">Exact spot is revealed 1hr before start</p>
           
           {/* Map Container */}
           <div className="map-container relative w-full bg-gray-50 rounded-[4vw] max-rounded-2xl overflow-hidden shadow-sm">
-            <Image 
-              src="/Images/Sign up /Sign up /Old-Union.jpg"
-              alt="Old Union at Stanford"
-              fill
-              className="map-image object-cover object-center"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              priority
-            />
-            
-            {/* Location Marker */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-full">
-              <div className="relative">
-                {/* Pin */}
-                <div className="relative">
-                  <svg className="w-[10vw] h-[12vw] min-w-[32px] min-h-[38px] max-w-[40px] max-h-[48px]" viewBox="0 0 40 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M20 0C9.2 0 0 9.2 0 20C0 35 20 48 20 48S40 35 40 20C40 9.2 30.8 0 20 0Z" fill="#EA4335"/>
-                    <circle cx="20" cy="20" r="8" fill="white"/>
-                  </svg>
-                </div>
+            {location && !locationError ? (
+              <>
+                {/* Google Maps Static Image */}
+                <Image 
+                  src={getMapUrl(location, 350)}
+                  alt={`${location.name} at Stanford`}
+                  fill
+                  className="map-image object-cover object-center"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  priority
+                />
                 
-                {/* Label */}
-                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-[1vh] whitespace-nowrap">
+                {/* Clickable overlay for navigation */}
+                <button
+                  onClick={() => {
+                    const navUrl = getNavigationUrl(location);
+                    window.open(navUrl, '_blank');
+                  }}
+                  className="absolute inset-0 bg-transparent hover:bg-black/10 transition-colors"
+                  aria-label={`Open ${location.name} in Google Maps`}
+                />
+                
+                {/* Location Label */}
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
                   <div className="bg-white px-[3vw] py-[0.5vh] min-px-2 min-py-1 rounded-full shadow-lg border border-gray-200">
-                    <span className="text-[2.8vw] min-text-xs max-text-sm font-medium text-gray-800">Old Union at Stanford</span>
+                    <span className="text-[2.8vw] min-text-xs max-text-sm font-medium text-gray-800">{location.name} at Stanford</span>
                   </div>
                 </div>
-              </div>
-            </div>
+              </>
+            ) : (
+              /* Fallback to original image if location fails to load */
+              <>
+                <Image 
+                  src="/Images/Sign up /Sign up /Old-Union.jpg"
+                  alt="Old Union at Stanford"
+                  fill
+                  className="map-image object-cover object-center"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  priority
+                />
+                
+                {/* Location Marker */}
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-full">
+                  <div className="relative">
+                    {/* Pin */}
+                    <div className="relative">
+                      <svg className="w-[10vw] h-[12vw] min-w-[32px] min-h-[38px] max-w-[40px] max-h-[48px]" viewBox="0 0 40 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 0C9.2 0 0 9.2 0 20C0 35 20 48 20 48S40 35 40 20C40 9.2 30.8 0 20 0Z" fill="#EA4335"/>
+                        <circle cx="20" cy="20" r="8" fill="white"/>
+                      </svg>
+                    </div>
+                    
+                    {/* Label */}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-[1vh] whitespace-nowrap">
+                      <div className="bg-white px-[3vw] py-[0.5vh] min-px-2 min-py-1 rounded-full shadow-lg border border-gray-200">
+                        <span className="text-[2.8vw] min-text-xs max-text-sm font-medium text-gray-800">Old Union at Stanford</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-export const APP_TIME_OFFSET: number | null = 20;
+export const APP_TIME_OFFSET: number | null = null;
 
 //  Change the APP_TIME_OFFSET value:
 //  null = real PST time
