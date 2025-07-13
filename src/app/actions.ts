@@ -2,7 +2,6 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server'; // Using your suggested, better import path
-import { revalidatePath } from 'next/cache';
 
 // Adding explicit return type and server-side validation
 export async function saveUserInterests(interests: string[]): Promise<{ error: string | null }> {
@@ -27,10 +26,17 @@ export async function saveUserInterests(interests: string[]): Promise<{ error: s
 
   if (error) {
     // Gracefully handle re-submissions without showing an error to the user
-    if (error.message.includes('duplicate key value violates unique constraint')) {
+    if (error.message && error.message.includes('duplicate key value violates unique constraint')) {
       return { error: null };
     }
-    console.error('Error saving user interests:', error.message);
+    
+    // Handle table not existing (until new schema is deployed)
+    if (error.message && error.message.includes('relation "user_interests" does not exist')) {
+      console.log('user_interests table does not exist yet - skipping interest save until schema deployment');
+      return { error: null };
+    }
+    
+    console.error('Error saving user interests:', error.message || error);
     return { error: 'Could not save your interests. Please try again.' };
   }
 
