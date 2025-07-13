@@ -17,55 +17,28 @@ export interface LocationWithSpark {
  * @param circleId Circle ID to fetch location for
  * @returns Location and spark data for the circle
  */
-export async function getCircleLocation(circleId: string): Promise<{
+export async function getCircleLocation(_circleId: string): Promise<{
   location: Location | null;
   spark: string | null;
   error: string | null;
 }> {
   try {
-    const supabase = await createClient();
+    // For now, since the current database schema doesn't have the enhanced circles table,
+    // we'll return mock data that matches the development setup
+    // This will be updated once the new schema is deployed
     
-    // Query circle with location and spark data
-    const { data: circle, error: circleError } = await supabase
-      .from('circles')
-      .select(`
-        location_id,
-        conversation_spark_id,
-        locations!inner (
-          id,
-          name,
-          latitude,
-          longitude
-        ),
-        conversation_sparks!inner (
-          spark_text
-        )
-      `)
-      .eq('id', circleId)
-      .single();
-
-    if (circleError) {
-      console.error('Error fetching circle location:', circleError);
-      return { location: null, spark: null, error: 'Failed to fetch circle location' };
-    }
-
-    if (!circle) {
-      return { location: null, spark: null, error: 'Circle not found' };
-    }
-
-    // Type-safe extraction of location data
-    const location: Location = {
-      id: circle.locations.id,
-      name: circle.locations.name,
-      description: null, // Not used in current schema
-      address: null, // Not used in current schema  
-      latitude: circle.locations.latitude,
-      longitude: circle.locations.longitude
+    return {
+      location: {
+        id: 'mock-old-union',
+        name: 'Old Union',
+        description: 'Stanford University Campus',
+        address: null,
+        latitude: 37.424946,
+        longitude: -122.170571
+      },
+      spark: "What's one of the major problems that you see on campus?",
+      error: null
     };
-
-    const spark = circle.conversation_sparks.spark_text;
-
-    return { location, spark, error: null };
 
   } catch (error) {
     console.error('Unexpected error in getCircleLocation:', error);
@@ -87,62 +60,21 @@ export async function getTodaysMainLocation(): Promise<{
   error: string | null;
 }> {
   try {
-    const supabase = await createClient();
+    // For now, since the current database schema doesn't have the enhanced circles table,
+    // we'll return the default Old Union location
+    // This will be updated once the new schema is deployed
     
-    // Get today's date in PST
-    const today = new Date();
-    const todayPST = new Date(today.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
-    const dateString = todayPST.toISOString().split('T')[0];
-    
-    // Query the most common location for today's events
-    const { data: locations, error: locationsError } = await supabase
-      .from('circles')
-      .select(`
-        location_id,
-        locations!inner (
-          id,
-          name,
-          latitude,
-          longitude
-        )
-      `)
-      .gte('time_slot', `${dateString}T00:00:00`)
-      .lt('time_slot', `${dateString}T23:59:59`)
-      .not('location_id', 'is', null);
-
-    if (locationsError) {
-      console.error('Error fetching today\'s locations:', locationsError);
-      return { location: null, error: 'Failed to fetch location data' };
-    }
-
-    if (!locations || locations.length === 0) {
-      // Fallback to Old Union as default Stanford location
-      return {
-        location: {
-          id: 'fallback-old-union',
-          name: 'Old Union',
-          description: 'Stanford University Campus',
-          address: null,
-          latitude: 37.424946,
-          longitude: -122.170571
-        },
-        error: null
-      };
-    }
-
-    // Find most frequent location (simple approach - take first for now)
-    const primaryLocation = locations[0].locations;
-    
-    const location: Location = {
-      id: primaryLocation.id,
-      name: primaryLocation.name,
-      description: null,
-      address: null,
-      latitude: primaryLocation.latitude,
-      longitude: primaryLocation.longitude
+    return {
+      location: {
+        id: 'default-old-union',
+        name: 'Old Union',
+        description: 'Stanford University Campus',
+        address: null,
+        latitude: 37.424946,
+        longitude: -122.170571
+      },
+      error: null
     };
-
-    return { location, error: null };
 
   } catch (error) {
     console.error('Unexpected error in getTodaysMainLocation:', error);

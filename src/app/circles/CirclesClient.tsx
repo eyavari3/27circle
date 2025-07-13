@@ -502,34 +502,17 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
                 </div>
               </>
             ) : (
-              /* Fallback to original image if location fails to load */
+              /* Fallback to placeholder if location fails to load */
               <>
-                <Image 
-                  src="/Images/Sign up /Sign up /Old-Union.jpg"
-                  alt="Old Union at Stanford"
-                  fill
-                  className="map-image object-cover object-center"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  priority
-                />
-                
-                {/* Location Marker */}
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-full">
-                  <div className="relative">
-                    {/* Pin */}
-                    <div className="relative">
-                      <svg className="w-[10vw] h-[12vw] min-w-[32px] min-h-[38px] max-w-[40px] max-h-[48px]" viewBox="0 0 40 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20 0C9.2 0 0 9.2 0 20C0 35 20 48 20 48S40 35 40 20C40 9.2 30.8 0 20 0Z" fill="#EA4335"/>
-                        <circle cx="20" cy="20" r="8" fill="white"/>
-                      </svg>
-                    </div>
-                    
-                    {/* Label */}
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-[1vh] whitespace-nowrap">
-                      <div className="bg-white px-[3vw] py-[0.5vh] min-px-2 min-py-1 rounded-full shadow-lg border border-gray-200">
-                        <span className="text-[2.8vw] min-text-xs max-text-sm font-medium text-gray-800">Old Union at Stanford</span>
-                      </div>
-                    </div>
+                <div 
+                  className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center"
+                >
+                  <div className="text-center text-gray-600">
+                    <svg className="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <p className="text-sm">Stanford Campus</p>
                   </div>
                 </div>
               </>
