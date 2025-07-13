@@ -25,18 +25,21 @@ export async function saveUserInterests(interests: string[]): Promise<{ error: s
   const { error } = await supabase.from('user_interests').insert(interestsToInsert);
 
   if (error) {
+    // Get error message safely from various possible error structures
+    const errorMessage = error?.message || error?.details || error?.hint || String(error);
+    
     // Gracefully handle re-submissions without showing an error to the user
-    if (error.message && error.message.includes('duplicate key value violates unique constraint')) {
+    if (errorMessage && errorMessage.includes('duplicate key value violates unique constraint')) {
       return { error: null };
     }
     
     // Handle table not existing (until new schema is deployed)
-    if (error.message && error.message.includes('relation "user_interests" does not exist')) {
+    if (errorMessage && errorMessage.includes('relation "user_interests" does not exist')) {
       console.log('user_interests table does not exist yet - skipping interest save until schema deployment');
       return { error: null };
     }
     
-    console.error('Error saving user interests:', error.message || error);
+    console.error('Error saving user interests:', errorMessage);
     return { error: 'Could not save your interests. Please try again.' };
   }
 
