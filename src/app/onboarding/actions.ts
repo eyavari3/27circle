@@ -16,9 +16,10 @@ export async function saveUserInterests(interests: string[]): Promise<{ error: s
   //   return { error: 'You must be logged in to save interests.' };
   // }
 
-  // For development: Skip auth check and return success
+  // For development: Skip auth check and save to localStorage
   if (!user) {
-    console.log('Development mode: Skipping user interests save (no auth)');
+    console.log('Development mode: Saving user interests to localStorage');
+    // This will be handled client-side in the component
     return { error: null };
   }
 

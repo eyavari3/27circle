@@ -50,7 +50,7 @@ Purpose: All database mutations (INSERT, UPDATE, DELETE) must use Server Actions
 Authentication & Authorization
 
 Provider: Supabase Auth with phone/SMS via Twilio User Flow: Enter phone → SMS verification → Profile setup → Curiosity selections → Access granted Route Protection:
-Public routes: /, /welcome, /auth/*
+Public routes: /, /auth/*
 Protected routes: All others require completed onboarding
 Redirect logic: No auth → /, Incomplete onboarding → next step
 Session Management: Use Supabase's built-in session handling
@@ -90,14 +90,13 @@ Static Assets & Images (Corrected & Hardened)
 
 Root Location: All user-facing images MUST be stored in the /public/images/ directory.
 Organization: Use the following logical sub-directories:
-/public/images/onboarding/: For images used in the welcome/first page flow.
+/public/images/onboarding/: For images used in the onboarding flow.
 /public/images/curiosity/: For images used in the curiosity selection screens.
 /public/images/circles/: For images related to the main circles page or its components.
 /public/images/mockups/: For internal reference screenshots only. These MUST NOT be used in the application UI.
 Usage in Code: Images MUST be referenced in components using an absolute path from the /public directory (e.g., <Image src="/images/onboarding/Friends_Seated.png" ... />).
 Image Component: The next/image component MUST be used for all images.
 Key Application Images:
-Welcome Page: /images/onboarding/Friends_Seated.png
 Curiosity (Mind): /images/curiosity/Deep_Brain.png, /images/curiosity/Spiritual_Brain.png
 Curiosity (Heart): /images/curiosity/Heart_Left.png, /images/curiosity/Heart_Right.png
 Circles Template: /images/circles/Template.png

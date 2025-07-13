@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 import { TimeSlotWithUserStatus } from "@/lib/types";
 import { useCurrentTime } from "@/lib/hooks/useCurrentTime";
+import { useFeedbackCheck } from "@/lib/hooks/useFeedbackCheck";
 import { 
   getSlotState, 
   formatDisplayTime, 
-  formatSlotDisplayTime, 
   formatDeadlineTime,
-  createTimeSlots,
-  getDisplayDate 
+  getDisplayDate,
+  createTimeSlots
 } from "@/lib/time";
 import { joinWaitlist, leaveWaitlist } from "@/app/circles/actions";
 import { useRouter } from "next/navigation";
@@ -24,17 +24,20 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
   const [timeSlots, setTimeSlots] = useState(initialTimeSlots);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoaded, setIsLoaded] = useState(false);
+  const [lastDisplayDate, setLastDisplayDate] = useState<Date | null>(null);
+  const [justReset, setJustReset] = useState(false);
   const router = useRouter();
+
+  // Check for pending feedback and redirect if necessary
+  const { currentFeedbackWindow } = useFeedbackCheck('dev-user-id');
 
   // Load persisted waitlist state from localStorage on mount
   useEffect(() => {
-    // Clear localStorage in development to avoid confusion
-    if (process.env.NODE_ENV === 'development') {
-      localStorage.removeItem('dev-waitlist');
-      setIsLoaded(true);
-      return;
-    }
-    
+    // Comment out clear for testing persistence
+    // if (process.env.NODE_ENV === 'development') {
+    //   localStorage.removeItem('dev-waitlist');
+    // }
+
     const persistedWaitlist = localStorage.getItem('dev-waitlist');
     if (persistedWaitlist) {
       try {
@@ -43,6 +46,7 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
           ...slot,
           isOnWaitlist: waitlistSet.has(slot.timeSlot.time.toISOString())
         })));
+        console.log('Loaded persisted waitlist:', waitlistSet); // Debug
       } catch (e) {
         console.error('Error loading persisted waitlist:', e);
       }
@@ -50,8 +54,65 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
     setIsLoaded(true);
   }, []);
 
+  // Check if we've crossed 8PM and need to show next day's slots
   useEffect(() => {
     if (!isLoaded) return;
+    
+    const currentDisplayDate = getDisplayDate(currentTime);
+    
+    if (!lastDisplayDate) {
+      setLastDisplayDate(currentDisplayDate);
+      return;
+    }
+    
+    // Check if the display date has changed (crossed 8PM boundary)
+    if (currentDisplayDate.getTime() !== lastDisplayDate.getTime()) {
+      console.log('🕐 Display date changed! Regenerating slots for next day...');
+      console.log('Previous date:', lastDisplayDate.toDateString());
+      console.log('New date:', currentDisplayDate.toDateString());
+      
+      // FIRST: Clear localStorage waitlist for the new day (in development)
+      if (process.env.NODE_ENV === 'development') {
+        localStorage.removeItem('dev-waitlist');
+        console.log('🧹 Cleared dev-waitlist for new day');
+      }
+      
+      // Create new time slots for the new day
+      const newTimeSlots = createTimeSlots(currentDisplayDate);
+      
+      // Reset to fresh state (all Join buttons, no waitlist)
+      const freshTimeSlots: TimeSlotWithUserStatus[] = newTimeSlots.map(slot => ({
+        timeSlot: {
+          time: slot.time,
+          deadline: slot.deadline
+        },
+        isOnWaitlist: false, // Explicitly set to false for fresh day
+        assignedCircleId: null,
+        circleData: null,
+        buttonState: 'join' as const,
+        buttonText: 'Join',
+        isDisabled: false
+      }));
+      
+      setTimeSlots(freshTimeSlots);
+      setLastDisplayDate(currentDisplayDate);
+      setJustReset(true);
+      console.log('✅ Reset complete - all slots should show "Join"');
+      console.log('Fresh slots created:', freshTimeSlots.map(s => ({
+        time: s.timeSlot.time.toLocaleTimeString(),
+        isOnWaitlist: s.isOnWaitlist,
+        buttonText: s.buttonText
+      })));
+      
+      // Clear the reset flag after a short delay to allow the reset to take effect
+      setTimeout(() => setJustReset(false), 100);
+    }
+  }, [currentTime, isLoaded, lastDisplayDate]);
+
+  useEffect(() => {
+    if (!isLoaded || justReset) return;
+    
+    console.log('🔄 Processing button states...', { justReset });
     
     setTimeSlots(prev => prev.map(slot => {
       const timeSlot = {
@@ -86,10 +147,12 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
         }
       } else if (slotState === 'post-deadline') {
         if (slot.isOnWaitlist) {
-          // In development mode, simulate confirmed status for waitlisted users
+          console.log('🎉 CONFIRMED STATE TRIGGERED:', timeSlot.slot, 'at', formatDisplayTime(currentTime));
           buttonState = "confirmed";
           buttonText = "Confirmed ✓";
           isDisabled = false;
+          // Simulate assignedCircleId for dev
+          slot.assignedCircleId = slot.assignedCircleId || `simulated-${slot.timeSlot.time.getHours()}`;
         } else {
           buttonState = "closed";
           buttonText = `Closed at ${formatDeadlineTime(timeSlot)}`;
@@ -108,7 +171,7 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
         isDisabled
       };
     }));
-  }, [currentTime, isLoaded]);
+  }, [currentTime, isLoaded, justReset]);
 
   const handleSlotAction = async (slot: TimeSlotWithUserStatus) => {
     if (slot.buttonState === "confirmed") {
@@ -140,8 +203,9 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
         const currentWaitlist = updated
           .filter(s => s.isOnWaitlist)
           .map(s => s.timeSlot.time.toISOString());
-        if (process.env.NODE_ENV !== 'development') {
+        if (process.env.NODE_ENV === 'development') {
           localStorage.setItem('dev-waitlist', JSON.stringify(currentWaitlist));
+          console.log('Updated localStorage waitlist:', currentWaitlist); // Debug
         }
 
         return updated;
@@ -170,7 +234,7 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
             const revertedWaitlist = reverted
               .filter(s => s.isOnWaitlist)
               .map(s => s.timeSlot.time.toISOString());
-            if (process.env.NODE_ENV !== 'development') {
+            if (process.env.NODE_ENV === 'development') {
               localStorage.setItem('dev-waitlist', JSON.stringify(revertedWaitlist));
             }
 
@@ -178,7 +242,7 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
           });
           setErrors(prev => ({ ...prev, [slotKey]: result.error! }));
         }
-      } catch (err) {
+      } catch {
         // Revert optimistic update on error
         setTimeSlots(prev => {
           const reverted = prev.map(s => {
@@ -195,7 +259,7 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
           const revertedWaitlist = reverted
             .filter(s => s.isOnWaitlist)
             .map(s => s.timeSlot.time.toISOString());
-          if (process.env.NODE_ENV !== 'development') {
+          if (process.env.NODE_ENV === 'development') {
             localStorage.setItem('dev-waitlist', JSON.stringify(revertedWaitlist));
           }
 
@@ -236,17 +300,32 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
               {formatAppTime(currentTime)}
             </p>
           </div>
-          <div className="p-[1vw]">
+          <button 
+            onClick={() => {
+              console.log('🔧 Settings button clicked, navigating to /settings');
+              router.push('/settings');
+            }}
+            className="p-[1vw] rounded-full hover:bg-white/10 transition-colors"
+            aria-label="Settings"
+          >
             <svg className="w-[6vw] h-[6vw] min-w-[20px] max-w-[24px] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-          </div>
+          </button>
         </div>
         
         <div className="text-center">
-          <h1 className="text-[4.5vw] min-text-2xl max-text-3xl font-bold text-white mb-[1vh]">Today's Circles</h1>
+          <h1 className="text-[4.5vw] min-text-2xl max-text-3xl font-bold text-white mb-[1vh]">Today&apos;s Circles</h1>
           <p className="text-gray-300 text-[3vw] min-text-sm max-text-base">New conversations waiting to happen</p>
+          {currentFeedbackWindow && (
+            <button
+              onClick={() => router.push(`/feedback?timeSlot=${currentFeedbackWindow.timeSlot.slot}&eventId=dev-event-${currentFeedbackWindow.timeSlot.slot}`)}
+              className="mt-2 px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white text-xs rounded-full inline-block transition-colors cursor-pointer"
+            >
+              📝 Feedback needed for {currentFeedbackWindow.timeSlot.slot} event - Click here
+            </button>
+          )}
         </div>
       </div>
 
@@ -259,8 +338,6 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
           <div className="flex-1 flex flex-col justify-start space-y-3">
             {timeSlots.map((slot, index) => {
               const slotKey = slot.timeSlot.time.toISOString();
-              const deadline = new Date(slot.timeSlot.deadline);
-              const error = errors[slotKey];
               
               return (
                 <div 
@@ -315,8 +392,8 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
                     </div>
                   </div>
                   
-                  {error && (
-                    <div className="text-red-500 text-xs mt-2">{error}</div>
+                  {errors[slotKey] && (
+                    <div className="text-red-500 text-xs mt-2">{errors[slotKey]}</div>
                   )}
                 </div>
               );
@@ -324,6 +401,35 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
           </div>
           
           <p className="text-sm text-gray-500 text-center mt-4">Availability resets at 8PM each day</p>
+        </div>
+
+        {/* Update Preferences Section */}
+        <div className="px-6 py-4">
+          <button
+            onClick={() => router.push('/settings/preferences')}
+            className="w-full flex items-center justify-between p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                {/* Brain icon to match curiosity theme */}
+                <Image
+                  src="/Images/PNG/brain.png"
+                  alt="Brain"
+                  width={24}
+                  height={24}
+                  className="object-contain"
+                  unoptimized
+                />
+              </div>
+              <div className="text-left">
+                <p className="font-medium text-gray-900">Update Preferences</p>
+                <p className="text-sm text-gray-500">Curious about new communities?</p>
+              </div>
+            </div>
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
 
         {/* Location Section - ~25% of viewport */}

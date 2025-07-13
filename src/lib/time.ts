@@ -269,6 +269,72 @@ export function isValidTimeSlot(timeSlotString: string, currentTime?: Date): boo
   }
 }
 
+// =============================================================================
+// FEEDBACK TIMING
+// =============================================================================
+
+export type FeedbackWindow = {
+  timeSlot: TimeSlot;
+  feedbackStartTime: Date;
+  feedbackEndTime: Date;
+};
+
+/**
+ * Check if current time is in the feedback window for any events (30 minutes after event ends)
+ */
+export function getCurrentFeedbackWindow(currentTime?: Date): FeedbackWindow | null {
+  const time = currentTime || getCurrentPSTTime();
+  const slots = createTimeSlots(getDisplayDate(time));
+  
+  for (const slot of slots) {
+    const eventEndTime = new Date(slot.time);
+    eventEndTime.setMinutes(eventEndTime.getMinutes() + 20); // Event lasts 20 minutes
+    
+    const feedbackStartTime = new Date(eventEndTime);
+    feedbackStartTime.setMinutes(feedbackStartTime.getMinutes() + 10); // 10 minutes after event ends
+    
+    const feedbackEndTime = new Date(feedbackStartTime);
+    feedbackEndTime.setMinutes(feedbackEndTime.getMinutes() + 30); // 30 minute feedback window
+    
+    console.log(`📅 Event timing for ${slot.slot}:`, {
+      eventStart: slot.time.toLocaleTimeString(),
+      eventEnd: eventEndTime.toLocaleTimeString(), 
+      feedbackStart: feedbackStartTime.toLocaleTimeString(),
+      feedbackEnd: feedbackEndTime.toLocaleTimeString(),
+      currentTime: time.toLocaleTimeString(),
+      inWindow: time >= feedbackStartTime && time < feedbackEndTime
+    });
+    
+    // Check if current time is in the feedback window
+    if (time >= feedbackStartTime && time < feedbackEndTime) {
+      return {
+        timeSlot: slot,
+        feedbackStartTime,
+        feedbackEndTime,
+      };
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Check if a user needs to provide feedback for a specific event
+ */
+export function needsFeedback(timeSlot: TimeSlot, currentTime?: Date): boolean {
+  const feedbackWindow = getCurrentFeedbackWindow(currentTime);
+  return feedbackWindow?.timeSlot.slot === timeSlot.slot;
+}
+
+/**
+ * Get the time when feedback will be required for a time slot
+ */
+export function getFeedbackTime(timeSlot: TimeSlot): Date {
+  const eventEndTime = new Date(timeSlot.time);
+  eventEndTime.setMinutes(eventEndTime.getMinutes() + 30); // 20 min event + 10 min buffer
+  return eventEndTime;
+}
+
 /**
  * Get time zone info for logging and debugging
  */

@@ -1,8 +1,8 @@
-"use client"; // Keep for now as InterestSelection is client
+"use client";
 
 import InterestSelection, { type Option } from '@/components/onboarding/InterestSelection';
 
-export default function CuriosityHeadPage() {
+export default function CuriosityPageWrapper() {
   const headOptions: Option[] = [
     { 
       interestKey: 'scientific_topics', 
@@ -19,15 +19,17 @@ export default function CuriosityHeadPage() {
   ];
 
   return (
-    <InterestSelection
-      title="What sparks your curiosity?"
-      subtitle="Select one or both themes to meet and chat with up to 3 others."
-      
-      options={headOptions}
-      nextPageUrl="/onboarding/curiosity-1.1"
-      buttonText="Next"
-      stepText="Step 1 of 2"
-      showBackButton={false} // No back on first curiosity page
-    />
+    <div className="min-h-screen w-full">
+      <InterestSelection
+        title="What sparks your curiosity?"
+        subtitle="Select one or both themes to meet and chat with up to 3 others."
+        
+        options={headOptions}
+        nextPageUrl="/onboarding/curiosity-1.1"
+        buttonText="Next"
+        stepText="Step 1 of 2"
+        showBackButton={false}
+      />
+    </div>
   );
-} 
+}

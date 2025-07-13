@@ -1,0 +1,158 @@
+"use client";
+
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { formatPhoneForDisplay } from '@/lib/utils/phoneFormatter';
+import { createClient } from '@/lib/supabase/client';
+
+export default function VerifyClient() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const phoneNumber = searchParams.get('phone') || '';
+  const source = searchParams.get('source');
+  
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const supabase = createClient();
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!verificationCode.trim()) {
+      setError('Please enter the verification code');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // Use Supabase OTP verification
+      const { error } = await supabase.auth.verifyOtp({
+        phone: phoneNumber,
+        token: verificationCode,
+        type: 'sms'
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      console.log('✅ Phone verification successful');
+      
+      // Route based on source parameter
+      if (source === 'onboarding') {
+        router.push('/onboarding/profile');
+      } else {
+        router.push('/circles');
+      }
+    } catch (err) {
+      setError('Invalid verification code. Please try again.');
+      console.error('Verification error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
+
+      // Resend OTP using Supabase
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: phoneNumber
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      console.log('✅ Verification code resent to', phoneNumber);
+      
+    } catch (err) {
+      setError('Failed to resend code. Please try again.');
+      console.error('Resend error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-white flex flex-col">
+      <div className="flex-1 flex flex-col justify-center px-6 py-12 max-w-sm mx-auto w-full">
+        
+        {/* Back Button */}
+        <div className="mb-8">
+          <button 
+            onClick={() => router.back()} 
+            className="p-2 -ml-2 rounded-full"
+            style={{ backgroundColor: '#F5F5F5' }}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="#666666" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">
+            Verify Your Phone
+          </h1>
+          <p className="text-gray-600">
+            We sent a verification code to{' '}
+            <span className="font-medium">{formatPhoneForDisplay(phoneNumber)}</span>
+          </p>
+        </div>
+
+        {/* Verification Form */}
+        <form onSubmit={handleVerifyCode} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Verification Code
+            </label>
+            <input
+              type="text"
+              value={verificationCode}
+              onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="Enter 6-digit code"
+              className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-lg tracking-widest"
+              disabled={isLoading}
+              maxLength={6}
+            />
+          </div>
+
+          {error && (
+            <div className="text-red-600 text-sm text-center">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isLoading || verificationCode.length !== 6}
+            className="w-full py-4 px-6 text-white font-semibold rounded-full transition-all duration-200 disabled:opacity-50"
+            style={{ backgroundColor: '#0E2C54' }}
+          >
+            {isLoading ? 'Verifying...' : 'Verify Code'}
+          </button>
+        </form>
+
+        {/* Resend Code */}
+        <div className="text-center mt-6">
+          <p className="text-gray-600 text-sm mb-2">
+            Didn't receive the code?
+          </p>
+          <button
+            onClick={handleResendCode}
+            disabled={isLoading}
+            className="text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors disabled:opacity-50"
+          >
+            Resend Code
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
