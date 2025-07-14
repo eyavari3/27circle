@@ -25,8 +25,10 @@ export async function saveUserInterests(interests: string[]): Promise<{ error: s
   const { error } = await supabase.from('user_interests').insert(interestsToInsert);
 
   if (error) {
+    console.log('🔧 FIXED VERSION RUNNING - error object:', error);
     // Get error message safely from various possible error structures
     const errorMessage = error?.message || error?.details || error?.hint || String(error);
+    console.log('🔧 Extracted errorMessage:', errorMessage);
     
     // Gracefully handle re-submissions without showing an error to the user
     if (errorMessage && errorMessage.includes('duplicate key value violates unique constraint')) {
