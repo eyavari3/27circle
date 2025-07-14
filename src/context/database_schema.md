@@ -3,10 +3,14 @@
 -- 1. Users table (extends auth.users) - CODEBASE COMPATIBILITY
 CREATE TABLE users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  auth_id TEXT UNIQUE, -- For test users who don't have real auth.users entries
   full_name TEXT,
   gender TEXT,
   date_of_birth DATE,
-  phone_number TEXT UNIQUE
+  phone_number TEXT UNIQUE,
+  location TEXT DEFAULT 'Stanford University',
+  is_test BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 1b. Profiles table (extends auth.users) - NEW SCHEMA

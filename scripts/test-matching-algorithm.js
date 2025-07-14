@@ -49,58 +49,153 @@ const MATCHING_TEST_CASES = [
     expectedGroups: 0,
     expectedGroupSizes: [],
     expectedLeftover: 1
+  },
+  {
+    name: "Perfect 40-Person Test (Stanford Demographics)",
+    userCount: 40,
+    expectedGroups: 11,
+    expectedGroupSizes: [4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 2]
   }
 ];
 
-// Advanced matching algorithm with interest and gender balance
-function advancedMatchingAlgorithm(users) {
-  console.log(`\n🧮 Running advanced matching for ${users.length} users...`);
+// Simple age+gender matching algorithm
+function simpleMatchingAlgorithm(users) {
+  console.log(`\n🧮 Running simple age+gender matching for ${users.length} users...`);
   
-  // Step 1: Analyze user interests
-  const interestGroups = {};
-  users.forEach(user => {
-    const interests = user.interests || [];
-    const interestKey = interests.sort().join(',');
-    if (!interestGroups[interestKey]) {
-      interestGroups[interestKey] = [];
+  // Calculate age and filter valid users
+  const enhancedUsers = users
+    .map(user => {
+      const age = calculateAge(user.date_of_birth);
+      const age_group = getAgeGroup(age);
+      return {
+        ...user,
+        age,
+        age_group
+      };
+    })
+    .filter(user => 
+      user.user_id && 
+      user.full_name && 
+      user.gender && 
+      user.age_group &&
+      ['male', 'female', 'non-binary'].includes(user.gender.toLowerCase())
+    );
+  
+  if (enhancedUsers.length !== users.length) {
+    console.log(`   Filtered out ${users.length - enhancedUsers.length} users (missing age/gender data)`);
+  }
+  
+  // Create buckets: age_group + gender
+  const buckets = {};
+  enhancedUsers.forEach(user => {
+    const bucketKey = `${user.age_group}-${user.gender.toLowerCase()}`;
+    if (!buckets[bucketKey]) {
+      buckets[bucketKey] = [];
     }
-    interestGroups[interestKey].push(user);
+    buckets[bucketKey].push(user);
   });
   
-  console.log('   Interest distribution:');
-  Object.entries(interestGroups).forEach(([interests, userList]) => {
-    console.log(`     ${interests || 'no interests'}: ${userList.length} users`);
+  console.log('   User distribution by bucket:');
+  Object.entries(buckets).forEach(([bucket, userList]) => {
+    console.log(`     ${bucket}: ${userList.length} users`);
   });
   
-  // Step 2: Create balanced groups
-  const circles = [];
-  let remainingUsers = [...users];
+  // Process each bucket independently
+  const allCircles = [];
+  const allUnmatched = [];
   
-  // Try to create groups of 4 first
-  while (remainingUsers.length >= 4) {
-    const group = createBalancedGroup(remainingUsers, 4);
-    circles.push(group);
-    remainingUsers = remainingUsers.filter(user => !group.includes(user));
-  }
-  
-  // Then groups of 3
-  while (remainingUsers.length >= 3) {
-    const group = createBalancedGroup(remainingUsers, 3);
-    circles.push(group);
-    remainingUsers = remainingUsers.filter(user => !group.includes(user));
-  }
-  
-  // Finally groups of 2
-  while (remainingUsers.length >= 2) {
-    const group = createBalancedGroup(remainingUsers, 2);
-    circles.push(group);
-    remainingUsers = remainingUsers.filter(user => !group.includes(user));
-  }
+  Object.entries(buckets).forEach(([bucketKey, bucketUsers]) => {
+    console.log(`\n   Processing bucket: ${bucketKey} (${bucketUsers.length} users)`);
+    
+    const groupSizes = calculateOptimalGroupSizes(bucketUsers.length);
+    console.log(`     Optimal group sizes: [${groupSizes.join(', ')}]`);
+    
+    let remainingUsers = [...bucketUsers];
+    
+    // Create groups according to optimal sizes
+    groupSizes.forEach((size, index) => {
+      if (remainingUsers.length >= size) {
+        // Randomly shuffle and take first N users
+        const shuffled = [...remainingUsers].sort(() => Math.random() - 0.5);
+        const group = shuffled.slice(0, size);
+        allCircles.push(group);
+        
+        // Remove selected users from remaining
+        remainingUsers = remainingUsers.filter(user => !group.includes(user));
+        
+        console.log(`     Created group ${index + 1}: ${size} users`);
+      }
+    });
+    
+    // Add any leftover users to unmatched
+    if (remainingUsers.length > 0) {
+      allUnmatched.push(...remainingUsers);
+      console.log(`     ${remainingUsers.length} users left unmatched`);
+    }
+  });
   
   return {
-    circles,
-    unmatchedUsers: remainingUsers
+    circles: allCircles,
+    unmatchedUsers: allUnmatched
   };
+}
+
+// Age calculation utility functions
+function calculateAge(dateOfBirth) {
+  if (!dateOfBirth) return null;
+  
+  try {
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+    
+    if (isNaN(birthDate.getTime())) return null;
+    
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
+  } catch (error) {
+    console.error('Error calculating age:', error);
+    return null;
+  }
+}
+
+function getAgeGroup(age) {
+  if (age === null || age < 18) return null;
+  return age <= 25 ? '18-25' : '26+';
+}
+
+// Optimal group sizing logic
+function calculateOptimalGroupSizes(count) {
+  if (count <= 1) return [];
+  if (count <= 4) return [count];
+  if (count === 5) return [3, 2];
+  
+  const groups = [];
+  let remaining = count;
+  
+  // Maximize groups of 4
+  while (remaining >= 4) {
+    // Special handling to avoid leaving exactly 1 person
+    if (remaining === 5) {
+      groups.push(3, 2);
+      remaining = 0;
+    } else {
+      groups.push(4);
+      remaining -= 4;
+    }
+  }
+  
+  // Handle remaining people (2 or 3)
+  if (remaining >= 2) {
+    groups.push(remaining);
+  }
+  
+  return groups;
 }
 
 // Helper function to create a balanced group
@@ -176,8 +271,43 @@ async function testMatchingAlgorithm(testCase) {
   const testUsers = [];
   for (let i = 0; i < testCase.userCount; i++) {
     const userId = `test-user-${i + 1}`;
-    const genders = ['male', 'female', 'non-binary'];
-    const gender = genders[i % genders.length];
+    
+    // For 40-person test: 20 female, 18 male, 2 non-binary
+    // Age distribution: 80% under 26 (32 people), 20% over 25 (8 people)
+    let gender, age, dateOfBirth;
+    if (testCase.userCount === 40) {
+      // Gender distribution
+      if (i < 20) gender = 'female';
+      else if (i < 38) gender = 'male';
+      else gender = 'non-binary';
+      
+      // Age distribution: 80% are 18-25 (32 people), 20% are 26+ (8 people)
+      if (i < 32) {
+        // 18-25 age group
+        age = 18 + Math.floor(Math.random() * 8); // Random age between 18-25
+      } else {
+        // 26+ age group
+        age = 26 + Math.floor(Math.random() * 15); // Random age between 26-40
+      }
+      
+      // Calculate date of birth from age
+      const currentYear = new Date().getFullYear();
+      const birthYear = currentYear - age;
+      const birthMonth = Math.floor(Math.random() * 12) + 1;
+      const birthDay = Math.floor(Math.random() * 28) + 1;
+      dateOfBirth = `${birthYear}-${birthMonth.toString().padStart(2, '0')}-${birthDay.toString().padStart(2, '0')}`;
+    } else {
+      const genders = ['male', 'female', 'non-binary'];
+      gender = genders[i % genders.length];
+      
+      // Random age for other tests
+      age = 18 + Math.floor(Math.random() * 25);
+      const currentYear = new Date().getFullYear();
+      const birthYear = currentYear - age;
+      const birthMonth = Math.floor(Math.random() * 12) + 1;
+      const birthDay = Math.floor(Math.random() * 28) + 1;
+      dateOfBirth = `${birthYear}-${birthMonth.toString().padStart(2, '0')}-${birthDay.toString().padStart(2, '0')}`;
+    }
     
     // Create diverse interest combinations
     const allInterests = ['deep_thinking', 'spiritual_growth', 'new_activities', 'community_service'];
@@ -197,12 +327,14 @@ async function testMatchingAlgorithm(testCase) {
       user_id: userId,
       full_name: `Test User ${i + 1}`,
       gender,
+      date_of_birth: dateOfBirth,
+      age,
       interests
     });
   }
   
   // Run the matching algorithm
-  const result = advancedMatchingAlgorithm(testUsers);
+  const result = simpleMatchingAlgorithm(testUsers);
   
   // Validate results
   const actualGroups = result.circles.length;
@@ -264,7 +396,7 @@ async function testInterestMatching() {
     { user_id: '8', full_name: 'Hannah', gender: 'female', interests: ['spiritual_growth', 'community_service'] }
   ];
   
-  const result = advancedMatchingAlgorithm(testUsers);
+  const result = simpleMatchingAlgorithm(testUsers);
   
   console.log('\nInterest matching analysis:');
   result.circles.forEach((circle, index) => {
@@ -308,7 +440,7 @@ async function testGenderBalance() {
     { user_id: '8', full_name: 'Hannah', gender: 'female', interests: ['deep_thinking'] }
   ];
   
-  const result = advancedMatchingAlgorithm(testUsers);
+  const result = simpleMatchingAlgorithm(testUsers);
   
   console.log('\nGender balance analysis:');
   result.circles.forEach((circle, index) => {
@@ -355,7 +487,10 @@ async function runAllMatchingTests() {
 
 // Export functions
 module.exports = {
-  advancedMatchingAlgorithm,
+  simpleMatchingAlgorithm,
+  calculateAge,
+  getAgeGroup,
+  calculateOptimalGroupSizes,
   testMatchingAlgorithm,
   testInterestMatching,
   testGenderBalance,

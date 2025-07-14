@@ -1,7 +1,7 @@
-// in src/app/onboarding/actions.ts
 'use server';
 
-import { createClient } from '@/lib/supabase/server'; // Using your suggested, better import path
+import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { isTestPhoneNumber, isTestModeEnabled } from '@/lib/auth/test-user-utils';
 
 // Adding explicit return type and server-side validation
 export async function saveUserInterests(interests: string[]): Promise<{ error: string | null }> {
@@ -17,15 +17,35 @@ export async function saveUserInterests(interests: string[]): Promise<{ error: s
     return { error: 'You must be logged in to save interests.' };
   }
 
+  // For test mode: Always use service role client to completely bypass RLS
+  let targetSupabase = supabase;
+  let isTestUser = false;
+
+  if (isTestModeEnabled()) {
+    // Use service role client to check if this is a test user (bypasses any RLS issues)
+    const serviceSupabase = await createServiceClient();
+    const { data: userData } = await serviceSupabase
+      .from('users')
+      .select('phone_number, is_test')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (userData?.is_test || (userData?.phone_number && isTestPhoneNumber(userData.phone_number))) {
+      isTestUser = true;
+      targetSupabase = serviceSupabase; // Use service role for ALL test user operations
+      console.log('🧪 TEST MODE: Using service role client for ALL test user operations (bypassing RLS)');
+    }
+  }
+
   const interestsToInsert = interests.map(interestType => ({
     user_id: user.id,
     interest_type: interestType,
   }));
 
-  const { error } = await supabase.from('user_interests').insert(interestsToInsert);
+  const { error } = await targetSupabase.from('user_interests').insert(interestsToInsert);
 
   if (error) {
-    console.log('🔧 FIXED VERSION RUNNING - error object:', error);
+    console.log('🔧 Error saving user interests - error object:', error);
     // Get error message safely from various possible error structures
     const errorMessage = error?.message || error?.details || error?.hint || String(error);
     console.log('🔧 Extracted errorMessage:', errorMessage);
@@ -45,5 +65,6 @@ export async function saveUserInterests(interests: string[]): Promise<{ error: s
     return { error: 'Could not save your interests. Please try again.' };
   }
 
+  console.log(`✅ Interests saved successfully for ${isTestUser ? 'test' : 'regular'} user:`, user.id);
   return { error: null };
 }

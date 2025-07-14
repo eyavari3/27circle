@@ -164,7 +164,7 @@ export default function InterestSelection({
 
   return (
     <main 
-      className="min-h-screen flex flex-col"
+      className="h-screen flex flex-col"
       style={{ backgroundColor: '#FFFFFF' }}
     >
       {/* Container with mobile-first design */}

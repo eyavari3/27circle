@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { formatPhoneForDisplay } from '@/lib/utils/phoneFormatter';
 import { createClient } from '@/lib/supabase/client';
+import { isTestPhoneNumber, isTestModeEnabled, validateTestOTP } from '@/lib/auth/test-user-utils';
 
 export default function VerifyClient() {
   const router = useRouter();
@@ -27,18 +28,74 @@ export default function VerifyClient() {
     setError('');
 
     try {
-      // Use Supabase OTP verification
-      const { error } = await supabase.auth.verifyOtp({
-        phone: phoneNumber,
-        token: verificationCode,
-        type: 'sms'
-      });
-      
-      if (error) {
-        throw error;
+      // Check if this is a test user and test mode is enabled
+      const isTestUser = isTestPhoneNumber(phoneNumber);
+      const testModeActive = isTestModeEnabled();
+
+      if (isTestUser && testModeActive) {
+        // For test users, validate against fixed OTP instead of Supabase
+        if (!validateTestOTP(phoneNumber, verificationCode)) {
+          throw new Error('Invalid test OTP');
+        }
+        
+        // For test users, we still need to create a real Supabase session
+        // But we bypass the OTP verification step by using a server action
+        console.log('✅ TEST MODE: Phone verification successful for test user');
+        
+        // Call server action to create test user session
+        const response = await fetch('/api/auth/test-user-verify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            phone: phoneNumber,
+            testOtp: verificationCode 
+          }),
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || 'Test user verification failed');
+        }
+        
+        const result = await response.json();
+        
+        if (result.success && result.testMode) {
+          console.log('✅ TEST MODE: Test user created, proceeding to onboarding');
+          // Store test user info for server actions to detect
+          localStorage.setItem('test-user-id', result.userId);
+          localStorage.setItem('test-user-phone', phoneNumber);
+          
+          // Route based on source parameter  
+          if (source === 'onboarding') {
+            router.push('/onboarding/profile');
+          } else {
+            router.push('/circles');
+          }
+          return;
+        } else if (result.success) {
+          console.log('✅ TEST MODE: Session created, refreshing page to load auth state');
+          // Fallback: refresh to pick up auth state
+          window.location.reload();
+          return;
+        } else {
+          throw new Error('Test user authentication failed');
+        }
+      } else {
+        // Use Supabase OTP verification for real users
+        const { error } = await supabase.auth.verifyOtp({
+          phone: phoneNumber,
+          token: verificationCode,
+          type: 'sms'
+        });
+        
+        if (error) {
+          throw error;
+        }
+        
+        console.log('✅ Phone verification successful');
       }
-      
-      console.log('✅ Phone verification successful');
       
       // Route based on source parameter
       if (source === 'onboarding') {
@@ -79,8 +136,8 @@ export default function VerifyClient() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      <div className="flex-1 flex flex-col justify-center px-6 py-12 max-w-sm mx-auto w-full">
+    <div className="h-screen bg-white flex flex-col">
+      <div className="flex-1 flex flex-col justify-center px-6 py-8 max-w-sm mx-auto w-full">
         
         {/* Back Button */}
         <div className="mb-8">

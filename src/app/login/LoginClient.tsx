@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { formatPhoneNumber, getCleanPhoneNumber, isValidPhoneNumber } from '@/lib/utils/phoneFormatter';
 import { createClient } from '@/lib/supabase/client';
 import { getGoogleOAuthConfig, validateOAuthConfig } from '@/lib/auth/oauth-config';
+import { isTestPhoneNumber, isTestModeEnabled, simulateTestSMS } from '@/lib/auth/test-user-utils';
 
 export default function LoginClient() {
   const router = useRouter();
@@ -67,16 +68,26 @@ export default function LoginClient() {
       const cleanPhone = getCleanPhoneNumber(phoneNumber);
       const formattedForAPI = '+1' + cleanPhone; // Add country code for API
 
-      // Use Supabase phone auth
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: formattedForAPI
-      });
-      
-      if (error) {
-        throw error;
+      // Check if this is a test user and test mode is enabled
+      const isTestUser = isTestPhoneNumber(formattedForAPI);
+      const testModeActive = isTestModeEnabled();
+
+      if (isTestUser && testModeActive) {
+        // For test users, simulate SMS sending without actually calling Supabase
+        simulateTestSMS(formattedForAPI);
+        console.log('✅ TEST MODE: Simulated SMS verification code sent to', formattedForAPI);
+      } else {
+        // Use Supabase phone auth for real users
+        const { error } = await supabase.auth.signInWithOtp({
+          phone: formattedForAPI
+        });
+        
+        if (error) {
+          throw error;
+        }
+        
+        console.log('✅ SMS verification code sent to', formattedForAPI);
       }
-      
-      console.log('✅ SMS verification code sent to', formattedForAPI);
       
       // Pass source parameter to verification page
       const source = searchParams.get('source');
@@ -156,9 +167,9 @@ export default function LoginClient() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="h-screen bg-white flex flex-col">
       {/* Main Container */}
-      <div className="flex-1 flex flex-col justify-center px-6 py-12 max-w-sm mx-auto w-full">
+      <div className="flex-1 flex flex-col justify-center px-6 py-8 max-w-sm mx-auto w-full">
         
         {/* Logo and Branding */}
         <div className="text-center mb-12">

@@ -99,6 +99,7 @@ export interface MatchingUser {
   user_id: string;
   full_name: string;
   gender: 'male' | 'female' | 'non-binary';
+  date_of_birth: string | null; // Required for age calculation
   interests: string[];
 }
 
@@ -150,6 +151,7 @@ export interface WaitlistQueryResult {
     id: string;
     full_name: string;
     gender: 'male' | 'female' | 'non-binary';
+    date_of_birth: string | null; // Required for age calculation
     user_interests: { interest_type: string }[];
   };
 }

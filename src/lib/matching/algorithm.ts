@@ -1,8 +1,8 @@
 /**
- * BULLETPROOF MATCHING ALGORITHM
+ * SIMPLE AGE+GENDER MATCHING ALGORITHM
  * 
- * This module implements a robust matching algorithm with proper error handling,
- * validation, and atomic transactions for the 27 Circle app.
+ * This module implements a simple matching algorithm based on age groups and gender,
+ * with optimal group sizing and atomic transactions for the 27 Circle app.
  */
 
 import { dbAdmin, withTransaction } from '@/lib/database/client';
@@ -21,244 +21,219 @@ import {
 import { TimeSlot, createTimeSlotString } from '@/lib/time';
 
 // =============================================================================
+// CONSTANTS
+// =============================================================================
+
+/** Age boundary between young and older groups */
+export const AGE_BOUNDARY = 25;
+
+/** Minimum age for participation */
+export const MIN_AGE = 18;
+
+/** Maximum percentage of users that can be filtered before warning */
+export const MAX_FILTER_RATE = 0.5; // 50%
+
+// =============================================================================
+// AGE CALCULATION UTILITY
+// =============================================================================
+
+/**
+ * Calculate age from date of birth
+ * @param dateOfBirth Date of birth as string (YYYY-MM-DD)
+ * @returns Age in years, or null if invalid date
+ */
+export function calculateAge(dateOfBirth: string | null): number | null {
+  if (!dateOfBirth) return null;
+  
+  try {
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+    
+    // Check for invalid date
+    if (isNaN(birthDate.getTime())) return null;
+    
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    // Adjust if birthday hasn't occurred this year
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
+  } catch (error) {
+    console.error('Error calculating age:', error);
+    return null;
+  }
+}
+
+/**
+ * Get age group for a given age
+ * @param age User's age
+ * @returns '18-25' or '26+' or null if invalid
+ */
+export function getAgeGroup(age: number | null): '18-25' | '26+' | null {
+  if (age === null || age < MIN_AGE) return null;
+  return age <= AGE_BOUNDARY ? '18-25' : '26+';
+}
+
+// =============================================================================
+// ENHANCED MATCHING USER TYPE
+// =============================================================================
+
+interface EnhancedMatchingUser extends MatchingUser {
+  age: number | null;
+  age_group: '18-25' | '26+' | null;
+}
+
+// =============================================================================
+// OPTIMAL GROUP SIZING LOGIC
+// =============================================================================
+
+/**
+ * Calculate optimal group sizes for N people
+ * Rules: Min 2, Max 4, Special case for 5 = [3,2]
+ * @param count Number of people to group
+ * @returns Array of group sizes
+ */
+export function calculateOptimalGroupSizes(count: number): number[] {
+  if (count <= 1) return [];
+  if (count <= 4) return [count];
+  if (count === 5) return [3, 2];
+  
+  const groups: number[] = [];
+  let remaining = count;
+  
+  // Maximize groups of 4
+  while (remaining >= 4) {
+    // Special handling to avoid leaving exactly 1 person
+    if (remaining === 5) {
+      groups.push(3, 2);
+      remaining = 0;
+    } else {
+      groups.push(4);
+      remaining -= 4;
+    }
+  }
+  
+  // Handle remaining people (2 or 3)
+  if (remaining >= 2) {
+    groups.push(remaining);
+  }
+  
+  return groups;
+}
+
+// =============================================================================
 // MATCHING ALGORITHM CORE
 // =============================================================================
 
 /**
- * Main matching algorithm that groups users optimally
- * Implements specific distribution rules: 1=do nothing; 2-4=normal; 5=2+3; 6=2+4; 7-8=normal; 9=4+3+2; 10=4+4+2
+ * Simple age+gender based matching algorithm
+ * Groups users by age group (18-25 vs 26+) and gender, then optimally sizes groups
  */
 export async function runMatchingAlgorithm(users: MatchingUser[]): Promise<MatchingResult> {
-  console.log(`🧮 Running matching algorithm for ${users.length} users`);
+  console.log(`🧮 Running simple age+gender matching for ${users.length} users`);
   
   if (users.length === 0) {
     return { circles: [], unmatchedUsers: [] };
   }
   
-  // Validate user data
-  const validUsers = users.filter(user => 
-    user.user_id && 
-    user.full_name && 
-    user.gender && 
-    Array.isArray(user.interests)
-  );
+  // Enhance users with age data and filter invalid ones
+  const enhancedUsers: EnhancedMatchingUser[] = users
+    .map(user => {
+      const age = calculateAge(user.date_of_birth);
+      const age_group = getAgeGroup(age);
+      return {
+        ...user,
+        age,
+        age_group
+      };
+    })
+    .filter(user => 
+      user.user_id && 
+      user.full_name && 
+      user.gender && 
+      user.age_group && // Must have valid age group
+      ['male', 'female', 'non-binary'].includes(user.gender.toLowerCase())
+    );
   
-  if (validUsers.length !== users.length) {
-    console.warn(`⚠️ Filtered out ${users.length - validUsers.length} invalid users`);
-  }
+  const filteredCount = users.length - enhancedUsers.length;
+  const filterRate = users.length > 0 ? filteredCount / users.length : 0;
   
-  const circles: MatchingUser[][] = [];
-  let remainingUsers = [...validUsers];
-  
-  // Sort users by interest diversity (users with more interests first)
-  remainingUsers.sort((a, b) => b.interests.length - a.interests.length);
-  
-  // Apply specific distribution rules
-  const userCount = remainingUsers.length;
-  console.log(`📏 Applying distribution rules for ${userCount} users`);
-  
-  if (userCount === 1) {
-    // 1 = do nothing
-    console.log(`🚫 1 user - no circles created`);
-    return { circles: [], unmatchedUsers: remainingUsers };
-  } else if (userCount >= 2 && userCount <= 4) {
-    // 2-4 = normal (single group)
-    console.log(`👥 ${userCount} users - creating single group`);
-    const group = createOptimalGroup(remainingUsers, userCount);
-    circles.push(group);
-    remainingUsers = remainingUsers.filter(user => !group.includes(user));
-  } else if (userCount === 5) {
-    // 5 = 2+3
-    console.log(`🎯 5 users - creating 2+3 distribution`);
-    const group3 = createOptimalGroup(remainingUsers, 3);
-    circles.push(group3);
-    remainingUsers = remainingUsers.filter(user => !group3.includes(user));
+  if (filteredCount > 0) {
+    console.warn(`⚠️ Filtered out ${filteredCount} users (missing age/gender data)`);
     
-    const group2 = createOptimalGroup(remainingUsers, 2);
-    circles.push(group2);
-    remainingUsers = remainingUsers.filter(user => !group2.includes(user));
-  } else if (userCount === 6) {
-    // 6 = 2+4
-    console.log(`🎯 6 users - creating 2+4 distribution`);
-    const group4 = createOptimalGroup(remainingUsers, 4);
-    circles.push(group4);
-    remainingUsers = remainingUsers.filter(user => !group4.includes(user));
-    
-    const group2 = createOptimalGroup(remainingUsers, 2);
-    circles.push(group2);
-    remainingUsers = remainingUsers.filter(user => !group2.includes(user));
-  } else if (userCount >= 7 && userCount <= 8) {
-    // 7-8 = normal (groups of 4 first, then 3, then 2)
-    console.log(`👥 ${userCount} users - normal distribution`);
-    while (remainingUsers.length >= 4) {
-      const group = createOptimalGroup(remainingUsers, 4);
-      circles.push(group);
-      remainingUsers = remainingUsers.filter(user => !group.includes(user));
-    }
-    while (remainingUsers.length >= 3) {
-      const group = createOptimalGroup(remainingUsers, 3);
-      circles.push(group);
-      remainingUsers = remainingUsers.filter(user => !group.includes(user));
-    }
-    while (remainingUsers.length >= 2) {
-      const group = createOptimalGroup(remainingUsers, 2);
-      circles.push(group);
-      remainingUsers = remainingUsers.filter(user => !group.includes(user));
-    }
-  } else if (userCount === 9) {
-    // 9 = 4+3+2
-    console.log(`🎯 9 users - creating 4+3+2 distribution`);
-    const group4 = createOptimalGroup(remainingUsers, 4);
-    circles.push(group4);
-    remainingUsers = remainingUsers.filter(user => !group4.includes(user));
-    
-    const group3 = createOptimalGroup(remainingUsers, 3);
-    circles.push(group3);
-    remainingUsers = remainingUsers.filter(user => !group3.includes(user));
-    
-    const group2 = createOptimalGroup(remainingUsers, 2);
-    circles.push(group2);
-    remainingUsers = remainingUsers.filter(user => !group2.includes(user));
-  } else if (userCount === 10) {
-    // 10 = 4+4+2
-    console.log(`🎯 10 users - creating 4+4+2 distribution`);
-    const group4a = createOptimalGroup(remainingUsers, 4);
-    circles.push(group4a);
-    remainingUsers = remainingUsers.filter(user => !group4a.includes(user));
-    
-    const group4b = createOptimalGroup(remainingUsers, 4);
-    circles.push(group4b);
-    remainingUsers = remainingUsers.filter(user => !group4b.includes(user));
-    
-    const group2 = createOptimalGroup(remainingUsers, 2);
-    circles.push(group2);
-    remainingUsers = remainingUsers.filter(user => !group2.includes(user));
-  } else {
-    // For counts > 10, use normal distribution (groups of 4 first, then 3, then 2)
-    console.log(`👥 ${userCount} users - normal distribution (>10)`);
-    while (remainingUsers.length >= 4) {
-      const group = createOptimalGroup(remainingUsers, 4);
-      circles.push(group);
-      remainingUsers = remainingUsers.filter(user => !group.includes(user));
-    }
-    while (remainingUsers.length >= 3) {
-      const group = createOptimalGroup(remainingUsers, 3);
-      circles.push(group);
-      remainingUsers = remainingUsers.filter(user => !group.includes(user));
-    }
-    while (remainingUsers.length >= 2) {
-      const group = createOptimalGroup(remainingUsers, 2);
-      circles.push(group);
-      remainingUsers = remainingUsers.filter(user => !group.includes(user));
+    // Alert if too many users are being filtered (potential data issue)
+    if (filterRate > MAX_FILTER_RATE) {
+      console.error(`🚨 HIGH FILTER RATE: ${(filterRate * 100).toFixed(1)}% of users filtered. Check data quality!`);
     }
   }
   
-  console.log(`📊 Created ${circles.length} circles, ${remainingUsers.length} unmatched users`);
-  console.log(`📈 Matching efficiency: ${((validUsers.length - remainingUsers.length) / validUsers.length * 100).toFixed(1)}%`);
+  // Create buckets: age_group + gender
+  const buckets: Record<string, EnhancedMatchingUser[]> = {};
   
-  return {
-    circles,
-    unmatchedUsers: remainingUsers
-  };
-}
-
-/**
- * Create an optimal group using advanced scoring algorithm
- */
-function createOptimalGroup(availableUsers: MatchingUser[], targetSize: number): MatchingUser[] {
-  if (availableUsers.length <= targetSize) {
-    return availableUsers.slice(0, targetSize);
-  }
+  enhancedUsers.forEach(user => {
+    const bucketKey = `${user.age_group}-${user.gender.toLowerCase()}`;
+    if (!buckets[bucketKey]) {
+      buckets[bucketKey] = [];
+    }
+    buckets[bucketKey].push(user);
+  });
   
-  const group: MatchingUser[] = [];
-  const remaining = [...availableUsers];
+  console.log('📊 User distribution by bucket:');
+  Object.entries(buckets).forEach(([bucket, users]) => {
+    console.log(`   ${bucket}: ${users.length} users`);
+  });
   
-  // Track group composition
-  const genderCounts: Record<string, number> = { male: 0, female: 0, 'non-binary': 0 };
-  const interestCounts: Record<string, number> = {};
+  // Process each bucket independently
+  const allCircles: MatchingUser[][] = [];
+  const allUnmatched: MatchingUser[] = [];
   
-  for (let i = 0; i < targetSize; i++) {
-    let bestUser: MatchingUser | null = null;
-    let bestScore = -1;
+  Object.entries(buckets).forEach(([bucketKey, bucketUsers]) => {
+    console.log(`\n🔄 Processing bucket: ${bucketKey} (${bucketUsers.length} users)`);
     
-    remaining.forEach(user => {
-      const score = calculateUserScore(user, group, genderCounts, interestCounts, targetSize);
-      
-      if (score > bestScore) {
-        bestScore = score;
-        bestUser = user;
+    const groupSizes = calculateOptimalGroupSizes(bucketUsers.length);
+    console.log(`   Optimal group sizes: [${groupSizes.join(', ')}]`);
+    
+    let remainingUsers = [...bucketUsers];
+    
+    // Create groups according to optimal sizes
+    groupSizes.forEach((size, index) => {
+      if (remainingUsers.length >= size) {
+        // Randomly shuffle and take first N users
+        const shuffled = [...remainingUsers].sort(() => Math.random() - 0.5);
+        const group = shuffled.slice(0, size);
+        allCircles.push(group);
+        
+        // Remove selected users from remaining
+        remainingUsers = remainingUsers.filter(user => !group.includes(user));
+        
+        console.log(`   Created group ${index + 1}: ${size} users`);
       }
     });
     
-    if (bestUser) {
-      group.push(bestUser);
-      
-      // Update tracking
-      genderCounts[bestUser.gender] = (genderCounts[bestUser.gender] || 0) + 1;
-      bestUser.interests.forEach(interest => {
-        interestCounts[interest] = (interestCounts[interest] || 0) + 1;
-      });
-      
-      // Remove from remaining
-      const userIndex = remaining.indexOf(bestUser);
-      remaining.splice(userIndex, 1);
+    // Add any leftover users to unmatched
+    if (remainingUsers.length > 0) {
+      allUnmatched.push(...remainingUsers);
+      console.log(`   ${remainingUsers.length} users left unmatched`);
     }
-  }
+  });
   
-  return group;
+  console.log(`\n📈 Final Results:`);
+  console.log(`   Total circles: ${allCircles.length}`);
+  console.log(`   Total matched: ${allCircles.reduce((sum, circle) => sum + circle.length, 0)}`);
+  console.log(`   Total unmatched: ${allUnmatched.length}`);
+  console.log(`   Matching efficiency: ${((enhancedUsers.length - allUnmatched.length) / enhancedUsers.length * 100).toFixed(1)}%`);
+  
+  return {
+    circles: allCircles,
+    unmatchedUsers: allUnmatched
+  };
 }
 
-/**
- * Calculate a score for how well a user fits into a group
- */
-function calculateUserScore(
-  user: MatchingUser,
-  currentGroup: MatchingUser[],
-  genderCounts: Record<string, number>,
-  interestCounts: Record<string, number>,
-  targetSize: number
-): number {
-  let score = 0;
-  
-  // 1. Gender diversity (40% weight)
-  const currentGenderCount = genderCounts[user.gender] || 0;
-  const maxGenderCount = Math.ceil(targetSize * 0.6); // Allow up to 60% of one gender
-  
-  if (currentGenderCount < maxGenderCount) {
-    score += 40 * (1 - currentGenderCount / maxGenderCount);
-  }
-  
-  // 2. Interest diversity (35% weight)
-  const userInterests = new Set(user.interests);
-  const groupInterests = new Set<string>();
-  currentGroup.forEach(member => {
-    member.interests.forEach(interest => groupInterests.add(interest));
-  });
-  
-  const sharedInterests = [...userInterests].filter(interest => groupInterests.has(interest));
-  const newInterests = [...userInterests].filter(interest => !groupInterests.has(interest));
-  
-  // Prefer some shared interests (connection) but also new interests (diversity)
-  score += newInterests.length * 8; // Up to 32 points for 4 new interests
-  score += Math.min(sharedInterests.length, 2) * 3; // Up to 6 points for shared interests
-  
-  // 3. Interest balance within group (15% weight)
-  let interestBalance = 0;
-  user.interests.forEach(interest => {
-    const currentCount = interestCounts[interest] || 0;
-    const maxCount = Math.ceil(targetSize * 0.75); // Allow up to 75% for one interest
-    
-    if (currentCount < maxCount) {
-      interestBalance += 15 / user.interests.length;
-    }
-  });
-  score += interestBalance;
-  
-  // 4. Randomization factor (10% weight) - prevents deterministic grouping
-  score += Math.random() * 10;
-  
-  return score;
-}
+// The complex group creation and scoring functions have been removed
+// since the new algorithm uses simple random assignment within age+gender buckets
 
 // =============================================================================
 // ATOMIC MATCHING PROCESS
@@ -355,12 +330,13 @@ async function validateSlotForMatching(slot: TimeSlot): Promise<ApiResponse<bool
 /**
  * Transform waitlist users for matching algorithm
  */
-async function transformUsersForMatching(waitlistData: any[]): Promise<MatchingUser[]> {
+async function transformUsersForMatching(waitlistData: WaitlistQueryResult[]): Promise<MatchingUser[]> {
   return waitlistData.map(entry => ({
     user_id: entry.user_id,
     full_name: entry.users.full_name,
     gender: entry.users.gender,
-    interests: entry.users.user_interests.map((ui: any) => ui.interest_type)
+    date_of_birth: entry.users.date_of_birth, // Include date_of_birth for age calculation
+    interests: entry.users.user_interests?.map(ui => ui.interest_type) || []
   }));
 }
 

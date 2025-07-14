@@ -153,18 +153,55 @@ export class DatabaseClient {
       }
 
       const supabase = await this.getClient();
-      const { data, error } = await supabase
-        .from('waitlist_entries')
-        .select(`
-          user_id,
-          users!inner(
+      // Use manual query to avoid foreign key relationship issues
+      const { data, error } = await supabase.rpc('get_waitlist_with_users', {
+        time_slot_param: timeSlot
+      });
+
+      // If RPC doesn't exist, fall back to manual join query
+      if (error && error.code === 'PGRST202') {
+        console.log('RPC not found, using manual query...');
+        
+        // Get waitlist entries first
+        const { data: waitlistData, error: waitlistError } = await supabase
+          .from('waitlist_entries')
+          .select('user_id')
+          .eq('time_slot', timeSlot);
+        
+        if (waitlistError) {
+          return createApiError(waitlistError, 'getWaitlistForTimeSlot');
+        }
+        
+        if (!waitlistData || waitlistData.length === 0) {
+          return createApiSuccess([]);
+        }
+        
+        const userIds = waitlistData.map(entry => entry.user_id);
+        
+        // Get user data with interests
+        const { data: usersData, error: usersError } = await supabase
+          .from('users')
+          .select(`
             id,
             full_name,
             gender,
+            date_of_birth,
             user_interests(interest_type)
-          )
-        `)
-        .eq('time_slot', timeSlot);
+          `)
+          .in('id', userIds);
+        
+        if (usersError) {
+          return createApiError(usersError, 'getWaitlistForTimeSlot');
+        }
+        
+        // Transform to expected format
+        const transformedData = usersData?.map(user => ({
+          user_id: user.id,
+          users: user
+        })) || [];
+        
+        return createApiSuccess(transformedData);
+      }
 
       if (error) {
         return createApiError(error, 'getWaitlistForTimeSlot');
@@ -511,6 +548,7 @@ export async function transformWaitlistForMatching(
     user_id: entry.user_id,
     full_name: entry.users.full_name,
     gender: entry.users.gender,
+    date_of_birth: entry.users.date_of_birth,
     interests: entry.users.user_interests.map(ui => ui.interest_type)
   }));
 }

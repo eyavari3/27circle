@@ -68,8 +68,8 @@ export function getNavigationUrl(location: { latitude: number; longitude: number
   // Use Google Maps URL scheme that works across platforms
   // This opens the app on mobile, web on desktop
   if (location.name) {
-    // Search for place by name and coordinates
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.name)}&query_place_id=${coords}`;
+    // Search for exact coordinates with place name for context
+    return `https://www.google.com/maps/search/?api=1&query=${coords}`;
   } else {
     // Direct coordinate navigation
     return `https://www.google.com/maps/dir/?api=1&destination=${coords}`;

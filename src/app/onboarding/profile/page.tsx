@@ -89,6 +89,23 @@ export default function ProfilePage() {
     if (!formData.fullName.trim()) newErrors.fullName = "Full name is required";
     if (!formData.gender) newErrors.gender = "Gender is required";
     if (!formData.dateOfBirth) newErrors.dateOfBirth = "Date of birth is required";
+    
+    // Age validation - must be 18 or older
+    if (formData.dateOfBirth) {
+      const birthDate = new Date(formData.dateOfBirth);
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      
+      // Adjust age if birthday hasn't occurred this year
+      const actualAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate()) 
+        ? age - 1 
+        : age;
+      
+      if (actualAge < 18) {
+        newErrors.dateOfBirth = "You must be at least 18 years old to join";
+      }
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -124,8 +141,8 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="px-6 py-8">
+    <div className="h-screen bg-white flex flex-col">
+      <div className="flex-1 px-6 py-6 overflow-y-auto">
         {/* Back Button */}
         <button 
           onClick={() => router.back()}
