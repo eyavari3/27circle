@@ -101,5 +101,5 @@ export default async function CirclesPage() {
     };
   });
   
-  return <CirclesClient initialTimeSlots={timeSlotsWithStatus} />;
+  return <CirclesClient initialTimeSlots={timeSlotsWithStatus} serverTime={currentTime} />;
 }

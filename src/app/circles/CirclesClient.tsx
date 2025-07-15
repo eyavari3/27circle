@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { TimeSlotWithUserStatus } from "@/lib/types";
 import { useCurrentTime } from "@/lib/hooks/useCurrentTime";
+import { useRenderCount } from "@/lib/hooks/useRenderCount";
+import LiveClock from "@/components/ui/LiveClock";
 import { useFeedbackCheck } from "@/lib/hooks/useFeedbackCheck";
 import { 
   getSlotState, 
@@ -20,10 +22,26 @@ import { Location } from "@/lib/types";
 
 interface CirclesClientProps {
   initialTimeSlots: TimeSlotWithUserStatus[];
+  serverTime?: Date;
 }
 
-export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) {
-  const currentTime = useCurrentTime();
+export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesClientProps) {
+  const { getNow } = useCurrentTime(serverTime);
+  
+  // Per-render caching to eliminate redundant getNow() calls
+  const nowRef = useRef<Date | null>(null);
+  const getCurrentTime = () => {
+    if (!nowRef.current) {
+      nowRef.current = getNow();
+    }
+    return nowRef.current;
+  };
+  
+  // Reset cache at start of each render
+  nowRef.current = null;
+  
+  // Performance measurement
+  const renderCount = useRenderCount('CirclesClient');
   const [timeSlots, setTimeSlots] = useState(initialTimeSlots);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoaded, setIsLoaded] = useState(false);
@@ -78,11 +96,14 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
     setIsLoaded(true);
   }, []);
 
+  // Memoized display date computation - only recalculates when needed
+  const currentDisplayDate = useMemo(() => {
+    return getDisplayDate(getCurrentTime());
+  }, [getCurrentTime]);
+  
   // Check if we've crossed 8PM and need to show next day's slots
   useEffect(() => {
     if (!isLoaded) return;
-    
-    const currentDisplayDate = getDisplayDate(currentTime);
     
     if (!lastDisplayDate) {
       setLastDisplayDate(currentDisplayDate);
@@ -131,14 +152,16 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
       // Clear the reset flag after a short delay to allow the reset to take effect
       setTimeout(() => setJustReset(false), 100);
     }
-  }, [currentTime, isLoaded, lastDisplayDate]);
+  }, [currentDisplayDate, isLoaded, lastDisplayDate]);
 
-  useEffect(() => {
-    if (!isLoaded || justReset) return;
+  // Memoized button states computation - only recalculates when dependencies change
+  const processedTimeSlots = useMemo(() => {
+    if (!isLoaded || justReset) return timeSlots;
     
-    console.log('🔄 Processing button states...', { justReset });
+    console.log('🔄 Processing button states...');
+    const currentTime = getCurrentTime();
     
-    setTimeSlots(prev => prev.map(slot => {
+    return timeSlots.map(slot => {
       const timeSlot = {
         time: slot.timeSlot.time,
         deadline: slot.timeSlot.deadline,
@@ -194,8 +217,13 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
         buttonText,
         isDisabled
       };
-    }));
-  }, [currentTime, isLoaded, justReset]);
+    });
+  }, [timeSlots, isLoaded, justReset, getCurrentTime]);
+  
+  // Update timeSlots when processedTimeSlots changes
+  useEffect(() => {
+    setTimeSlots(processedTimeSlots);
+  }, [processedTimeSlots]);
 
   const handleSlotAction = async (slot: TimeSlotWithUserStatus) => {
     if (slot.buttonState === "confirmed") {
@@ -294,9 +322,6 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
     }
   };
 
-  const formatAppTime = (time: Date) => {
-    return formatDisplayTime(time);
-  };
 
   const getButtonClasses = (slot: TimeSlotWithUserStatus) => {
     if (slot.buttonState === "confirmed") {
@@ -320,9 +345,10 @@ export default function CirclesClient({ initialTimeSlots }: CirclesClientProps) 
             <p className="text-[#152B5C] text-[3vw] min-text-xs max-text-sm font-light">
               App Time:
             </p>
-            <p className="text-[#152B5C] text-[3vw] min-text-xs max-text-sm font-light">
-              {formatAppTime(currentTime)}
-            </p>
+            <LiveClock 
+              initialTime={serverTime}
+              className="text-[#152B5C] text-[3vw] min-text-xs max-text-sm font-light"
+            />
           </div>
           <button 
             onClick={() => {

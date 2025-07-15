@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useCurrentTime } from './useCurrentTime';
 import { getCurrentFeedbackWindow } from '../time';
@@ -12,7 +12,12 @@ import { getCurrentFeedbackWindow } from '../time';
 export function useFeedbackCheck(userId?: string) {
   const router = useRouter();
   const pathname = usePathname();
-  const currentTime = useCurrentTime();
+  const { getNow } = useCurrentTime();
+
+  // Memoized feedback window computation
+  const currentFeedbackWindow = useMemo(() => {
+    return getCurrentFeedbackWindow(getNow());
+  }, [getNow]);
 
   useEffect(() => {
     // Don't redirect if already on feedback page or auth pages
@@ -21,7 +26,7 @@ export function useFeedbackCheck(userId?: string) {
     }
 
     // Check if we're in a feedback window
-    const feedbackWindow = getCurrentFeedbackWindow(currentTime);
+    const feedbackWindow = currentFeedbackWindow;
     console.log('🔍 Feedback check:', { feedbackWindow, userId, pathname });
     
     if (!feedbackWindow || !userId) {
@@ -69,9 +74,9 @@ export function useFeedbackCheck(userId?: string) {
         console.error('Error checking feedback requirements:', e);
       }
     }
-  }, [currentTime, pathname, router, userId]);
+  }, [currentFeedbackWindow, pathname, router, userId]);
 
   return {
-    currentFeedbackWindow: getCurrentFeedbackWindow(currentTime),
+    currentFeedbackWindow,
   };
 }

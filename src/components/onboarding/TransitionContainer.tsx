@@ -13,6 +13,8 @@ export default function TransitionContainer() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
+    console.log('🏗️ TransitionContainer useEffect running');
+    
     // In development mode, check if user has already completed onboarding
     if (process.env.NODE_ENV === 'development') {
       const hasAccount = localStorage.getItem('dev-user-account');
@@ -51,10 +53,12 @@ export default function TransitionContainer() {
       }
     }
     
+    console.log('✅ TransitionContainer auth check complete, starting splash timer');
     setIsCheckingAuth(false);
     
-    // Start fade out at 2.7s to complete by 3s
+    // Start fade out at 12.8s to match SplashScreen's internal timing
     const fadeOutTimer = setTimeout(() => {
+      console.log('⏰ TransitionContainer fade timer executing at 12.8s');
       setSplashFading(true);
       // Start curiosity fade in slightly before splash is fully gone
       setTimeout(() => {
@@ -64,12 +68,13 @@ export default function TransitionContainer() {
       setTimeout(() => {
         setShowSplash(false);
       }, 500);
-    }, 2700);
+    }, 4800); // Match SplashScreen's total duration (2800ms settle + 2000ms reading)
 
     return () => {
+      console.log('🧹 TransitionContainer cleanup, clearing fade timer');
       clearTimeout(fadeOutTimer);
     };
-  }, []);
+  }, [router]);
 
   const handleSkip = () => {
     // Immediate transition on click
@@ -101,18 +106,16 @@ export default function TransitionContainer() {
           } z-20`}
           onClick={handleSkip}
         >
-          <SplashScreen isVisible={!splashFading} />
+          <SplashScreen />
         </div>
       )}
 
       {/* Curiosity Page */}
-      <div
-        className={`fixed inset-0 w-full h-full transition-opacity duration-500 ${
-          curiosityVisible ? "opacity-100" : "opacity-0"
-        } z-10`}
-      >
-        <CuriosityPageWrapper />
-      </div>
+      {curiosityVisible && (
+        <div className="fixed inset-0 w-full h-full z-10">
+          <CuriosityPageWrapper />
+        </div>
+      )}
     </div>
   );
 }

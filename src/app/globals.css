@@ -110,3 +110,137 @@ a {
   object-fit: contain;
   object-position: center;
 }
+
+/* Stroke Draw Animation - Main swoosh path */
+@keyframes stroke-draw {
+  from {
+    stroke-dashoffset: 250;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-stroke-draw {
+  animation: stroke-draw 1s ease-out forwards;
+  animation-delay: 200ms;
+}
+
+/* Speed Lines Animation - Appear before stroke */
+@keyframes speed-lines {
+  0% {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0.6;
+    transform: translateX(1px);
+  }
+}
+
+.animate-speed-lines {
+  animation: speed-lines 0.6s ease-out forwards;
+  animation-delay: 100ms;
+}
+
+/* Logo Draw Animation - Creates drawing effect with filter */
+@keyframes logo-draw {
+  0% {
+    opacity: 0;
+    filter: brightness(0) drop-shadow(0 0 4px rgba(255,255,255,0.3));
+    transform: scale(0.95);
+  }
+  30% {
+    opacity: 0.3;
+    filter: brightness(0.3) drop-shadow(0 0 6px rgba(255,255,255,0.4));
+    transform: scale(0.98);
+  }
+  60% {
+    opacity: 0.7;
+    filter: brightness(0.7) drop-shadow(0 0 8px rgba(255,255,255,0.5));
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    filter: brightness(1) drop-shadow(0 0 4px rgba(255,255,255,0.3));
+    transform: scale(1);
+  }
+}
+
+.animate-logo-draw {
+  animation: logo-draw 1.2s ease-out forwards;
+  animation-delay: 200ms;
+}
+
+/* Glow Pulse Animation - Appears after logo completes */
+@keyframes glow-pulse {
+  0% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0.1;
+    transform: scale(1);
+  }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 1s ease-in-out forwards;
+  animation-delay: 400ms;
+}
+
+/* Custom Easing Utilities */
+.ease-overshoot {
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Base transition class for splash animations */
+.transition-splash {
+  transition-property: transform, opacity, filter;
+  transition-duration: 1s;
+  transition-timing-function: ease-out;
+}
+
+/* Accessibility: Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .transition-splash {
+    transition: none !important;
+  }
+  .animate-splash {
+    animation: none !important;
+  }
+  .animate-stroke-draw {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+  .animate-speed-lines {
+    animation: none !important;
+    opacity: 0.6 !important;
+  }
+  .animate-logo-draw {
+    animation: none !important;
+    opacity: 1 !important;
+    filter: brightness(1) !important;
+    transform: scale(1) !important;
+  }
+  .animate-glow-pulse {
+    animation: none !important;
+    opacity: 0.1 !important;
+  }
+}
+
+/* No JavaScript Fallback */
+html:not(.js) .transition-splash {
+  transition: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
+}
