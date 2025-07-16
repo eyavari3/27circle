@@ -21,7 +21,7 @@ export interface TimeSlotWithUserStatus {
   isOnWaitlist: boolean;
   assignedCircleId: string | null;
   circleData: CircleData | null;
-  buttonState: 'join' | 'leave' | 'closed' | 'confirmed' | 'past';
+  buttonState: 'join' | 'leave' | 'closed' | 'confirmed' | 'feedback' | 'past';
   buttonText: string;
   isDisabled: boolean;
 }

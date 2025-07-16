@@ -154,7 +154,17 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
       let buttonText: string;
       let isDisabled: boolean;
 
-      if (slotState === 'past-event') {
+      if (slotState === 'feedback-available') {
+        if (slot.isOnWaitlist) {
+          buttonState = "feedback";
+          buttonText = "Feedback";
+          isDisabled = false;
+        } else {
+          buttonState = "past";
+          buttonText = "Past";
+          isDisabled = true;
+        }
+      } else if (slotState === 'feedback-submitted') {
         buttonState = "past";
         buttonText = "Past";
         isDisabled = true;
@@ -200,6 +210,14 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
       // In development mode, use a simulated circle ID
       const circleId = slot.assignedCircleId || `dev-circle-${slot.timeSlot.time.getHours()}`;
       router.push(`/circles/${circleId}`);
+      return;
+    }
+
+    if (slot.buttonState === "feedback") {
+      // Navigate to feedback page
+      const timeSlot = slot.timeSlot.time.getHours() === 11 ? '11AM' : 
+                      slot.timeSlot.time.getHours() === 14 ? '2PM' : '5PM';
+      router.push(`/feedback?timeSlot=${timeSlot}&eventId=dev-event-${timeSlot}`);
       return;
     }
 
@@ -295,6 +313,9 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
   const getButtonClasses = (slot: TimeSlotWithUserStatus) => {
     if (slot.buttonState === "confirmed") {
       return "bg-green-100 text-green-700 border border-green-300 font-medium";
+    }
+    if (slot.buttonState === "feedback") {
+      return "bg-orange-100 text-orange-600 border border-orange-300 font-medium";
     }
     if (slot.buttonState === "closed" || slot.buttonState === "past") {
       return "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed font-medium";
@@ -405,7 +426,14 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
                         className={`px-4 py-2 rounded-full text-sm font-medium min-w-[70px] ${getButtonClasses(slot)}`}
                         style={slot.buttonState === "join" ? {backgroundColor: '#0E2C54'} : {}}
                       >
-                        {slot.buttonText}
+                        <div className="flex items-center justify-center space-x-1">
+                          <span>{slot.buttonText}</span>
+                          {(slot.buttonState === "confirmed" || slot.buttonState === "feedback") && (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          )}
+                        </div>
                       </button>
                     </div>
                   </div>
