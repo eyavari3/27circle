@@ -11,14 +11,11 @@ export async function saveUserInterests(interests: string[]): Promise<{ error: s
 
   // SIMPLE: Use service client for all operations
   const supabase = await createServiceClient();
-  console.log('🔍 DEBUG: Service client created');
   
   const { data: { user } } = await supabase.auth.getUser();
-  console.log('🔍 DEBUG: User from service client:', user ? `ID: ${user.id}` : 'NO USER');
   
   // Handle unauthenticated users during onboarding
   if (!user) {
-    console.log('🔍 DEBUG: No user - this is expected during onboarding');
     // Return success - interests will be saved after login
     return { error: null };
   }
@@ -28,11 +25,9 @@ export async function saveUserInterests(interests: string[]): Promise<{ error: s
     interest_type: interestType,
   }));
 
-  console.log('🔍 DEBUG: About to insert with service client:', interestsToInsert);
   const { error } = await supabase.from('user_interests').insert(interestsToInsert);
 
   if (error) {
-    console.log('🔧 Error saving user interests - error object:', error);
     // Handle duplicate key gracefully
     if (error.message?.includes('duplicate key value violates unique constraint')) {
       return { error: null };
@@ -42,7 +37,6 @@ export async function saveUserInterests(interests: string[]): Promise<{ error: s
     return { error: 'Could not save your interests. Please try again.' };
   }
 
-  console.log('✅ Interests saved successfully for user:', user.id);
   return { error: null };
 }
 
@@ -61,13 +55,11 @@ export async function submitProfile(profileData: {
 
   // For development: Skip auth check and return success
   if (!user) {
-    console.log('Development mode: Skipping profile save (no auth)');
     return { error: null };
   }
 
   // For test mode: Always use service role client to completely bypass RLS
   let targetSupabase = supabase;
-  let isTestUser = false;
 
   if (isTestModeEnabled()) {
     // Use service role client to check if this is a test user (bypasses any RLS issues)
@@ -79,9 +71,7 @@ export async function submitProfile(profileData: {
       .maybeSingle();
 
     if (userData?.is_test || (userData?.phone_number && isTestPhoneNumber(userData.phone_number))) {
-      isTestUser = true;
       targetSupabase = serviceSupabase; // Use service role for ALL test user operations
-      console.log('🧪 TEST MODE: Using service role client for ALL test user operations (bypassing RLS)');
     }
   }
 
@@ -100,7 +90,6 @@ export async function submitProfile(profileData: {
     return { error: 'Could not save your profile. Please try again.' };
   }
 
-  console.log(`✅ Profile updated successfully for ${isTestUser ? 'test' : 'regular'} user:`, user.id);
   revalidatePath('/circles');
   return { error: null };
 }
@@ -115,7 +104,6 @@ export async function ensureDevProfile(): Promise<{ error: string | null }> {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    console.log('Development mode: No user to create profile for');
     return { error: null };
   }
 
@@ -147,6 +135,5 @@ export async function ensureDevProfile(): Promise<{ error: string | null }> {
     return { error: 'Could not create dev profile' };
   }
 
-  console.log('Created default dev profile for user:', user.id);
   return { error: null };
 }
