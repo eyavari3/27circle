@@ -138,10 +138,12 @@ export function getSlotsReadyForMatching(currentTime?: Date): TimeSlot[] {
 // SLOT STATE DETERMINATION
 // =============================================================================
 
-export type SlotState = 'pre-deadline' | 'post-deadline' | 'past-event';
+export type SlotState = 'pre-deadline' | 'post-deadline' | 'feedback-available' | 'feedback-submitted' | 'past-event';
 
 /**
  * Determine the state of a time slot based on current time
+ * Note: This function only determines time-based states.
+ * Feedback submission status should be checked separately.
  */
 export function getSlotState(slot: TimeSlot, currentTime?: Date): SlotState {
   const time = currentTime || getCurrentPSTTime();
@@ -149,7 +151,7 @@ export function getSlotState(slot: TimeSlot, currentTime?: Date): SlotState {
   slotEndTime.setMinutes(slotEndTime.getMinutes() + 20); // 20 minutes after event
   
   if (time >= slotEndTime) {
-    return 'past-event';
+    return 'feedback-available'; // Circle has ended, feedback is available
   } else if (time >= slot.deadline) {
     return 'post-deadline';
   } else {
@@ -158,10 +160,16 @@ export function getSlotState(slot: TimeSlot, currentTime?: Date): SlotState {
 }
 
 /**
- * Check if a slot is in the past (more than 20 minutes after start time)
+ * Check if a slot is in the past (after feedback has been submitted)
+ * This requires checking both time AND feedback status
  */
 export function isSlotPast(slot: TimeSlot, currentTime?: Date): boolean {
-  return getSlotState(slot, currentTime) === 'past-event';
+  const time = currentTime || getCurrentPSTTime();
+  const slotEndTime = new Date(slot.time);
+  slotEndTime.setMinutes(slotEndTime.getMinutes() + 20); // 20 minutes after event
+  
+  // Only past if more than 20 minutes after event AND feedback submitted
+  return time >= slotEndTime;
 }
 
 /**
@@ -176,6 +184,13 @@ export function isSlotAcceptingSignups(slot: TimeSlot, currentTime?: Date): bool
  */
 export function isSlotInConfirmationWindow(slot: TimeSlot, currentTime?: Date): boolean {
   return getSlotState(slot, currentTime) === 'post-deadline';
+}
+
+/**
+ * Check if a slot is in the feedback window (20 minutes after event start)
+ */
+export function isSlotInFeedbackWindow(slot: TimeSlot, currentTime?: Date): boolean {
+  return getSlotState(slot, currentTime) === 'feedback-available';
 }
 
 // =============================================================================
