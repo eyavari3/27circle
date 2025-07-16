@@ -25,7 +25,7 @@ export default function LiveClock({ initialTime, className = "" }: LiveClockProp
     if (isDebug) {
       console.log('🕐 LiveClock render count:', renderCountRef.current);
     }
-  });
+  }, []); // Add empty dependency array to run only once
 
   useEffect(() => {
     // Start RAF-driven updates for smooth time display

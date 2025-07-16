@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { TimeSlotWithUserStatus } from "@/lib/types";
 import { useCurrentTime } from "@/lib/hooks/useCurrentTime";
-import { useRenderCount } from "@/lib/hooks/useRenderCount";
+
 import LiveClock from "@/components/ui/LiveClock";
 import { useFeedbackCheck } from "@/lib/hooks/useFeedbackCheck";
 import { 
@@ -28,20 +28,10 @@ interface CirclesClientProps {
 export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesClientProps) {
   const { getNow } = useCurrentTime(serverTime);
   
-  // Per-render caching to eliminate redundant getNow() calls
-  const nowRef = useRef<Date | null>(null);
-  const getCurrentTime = () => {
-    if (!nowRef.current) {
-      nowRef.current = getNow();
-    }
-    return nowRef.current;
-  };
+  // Get current time once per render to avoid infinite loops
+  const currentTime = getNow();
   
-  // Reset cache at start of each render
-  nowRef.current = null;
-  
-  // Performance measurement
-  const renderCount = useRenderCount('CirclesClient');
+
   const [timeSlots, setTimeSlots] = useState(initialTimeSlots);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoaded, setIsLoaded] = useState(false);
@@ -98,8 +88,8 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
 
   // Memoized display date computation - only recalculates when needed
   const currentDisplayDate = useMemo(() => {
-    return getDisplayDate(getCurrentTime());
-  }, [getCurrentTime]);
+    return getDisplayDate(currentTime);
+  }, [currentTime]);
   
   // Check if we've crossed 8PM and need to show next day's slots
   useEffect(() => {
@@ -158,8 +148,7 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
   const processedTimeSlots = useMemo(() => {
     if (!isLoaded || justReset) return timeSlots;
     
-    console.log('🔄 Processing button states...');
-    const currentTime = getCurrentTime();
+
     
     return timeSlots.map(slot => {
       const timeSlot = {
@@ -218,12 +207,7 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
         isDisabled
       };
     });
-  }, [timeSlots, isLoaded, justReset, getCurrentTime]);
-  
-  // Update timeSlots when processedTimeSlots changes
-  useEffect(() => {
-    setTimeSlots(processedTimeSlots);
-  }, [processedTimeSlots]);
+  }, [timeSlots, isLoaded, justReset, currentTime]);
 
   const handleSlotAction = async (slot: TimeSlotWithUserStatus) => {
     if (slot.buttonState === "confirmed") {
@@ -386,7 +370,7 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
           <h2 className="text-gray-700 font-medium text-[3.5vw] min-text-sm max-text-base mb-[2vh]">Upcoming Times</h2>
           
           <div className="flex-1 flex flex-col justify-start space-y-3">
-            {timeSlots.map((slot, index) => {
+            {processedTimeSlots.map((slot, index) => {
               const slotKey = slot.timeSlot.time.toISOString();
               
               return (
