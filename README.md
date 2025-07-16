@@ -1,40 +1,41 @@
-# 27circle-july
+# 27 Circle App
 
-A production-ready Next.js 14 (App Router) project using TypeScript, Tailwind CSS, and Supabase.
+A Next.js app for university students to join small group conversations ("Circles") on campus.
 
-## Stack
-- Next.js 14 (App Router)
-- TypeScript
-- Tailwind CSS (custom brand theme)
-- Supabase (@supabase/supabase-js)
+## Current Status: MVP Mode
 
-## Structure
-- `/app` – Main app directory (layout, pages)
-- `/components` – Reusable React components
-- `/components/ui` – UI primitives (e.g., Button)
-- `/lib` – Shared utilities and Supabase client
-- `/context` – For React context files
-- `/images` – App screenshots and references
+**Matching Algorithm**: Currently using simplified MVP approach where all users join one massive circle with no demographic matching.
 
-## Getting Started
-1. `npm install`
-2. `npm run dev`
+**Original Algorithm**: Backed up in `backup/matching-algorithm/` - see `RESTORE_INSTRUCTIONS.md` for details on restoring the age+gender bucketing algorithm when ready for advanced features.
 
----
+## Quick Start
 
-This project is ready for feature development.
+```bash
+npm install
+npm run dev
+```
 
-## Learn More
+## Key Features
 
-To learn more about Next.js, take a look at the following resources:
+- **Time Slots**: 11AM, 2PM, 5PM daily
+- **Waitlist System**: Join/leave before deadlines
+- **Simple Matching**: All users go to same circle (MVP)
+- **Location Assignment**: Single GPS coordinate for all
+- **Conversation Sparks**: Single topic for all groups
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Development
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Time Management**: Use `APP_TIME_OFFSET` in `src/lib/constants.ts` for testing
+- **Database**: Supabase with Row Level Security
+- **Authentication**: Supabase Auth with phone/SMS
+- **Styling**: Tailwind CSS
 
-## Deploy on Vercel
+## Testing
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+# Run comprehensive tests
+node scripts/run-all-tests.js
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Test matching manually
+node scripts/trigger-matching.js
+```
