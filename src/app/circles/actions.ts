@@ -3,8 +3,6 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { getCurrentPSTTime, parseTimeSlotString, isValidTimeSlot, createTimeSlots, getDisplayDate } from "@/lib/time";
-import { db } from "@/lib/database/client";
-import { ApiResponse } from "@/lib/database/types";
 import { ensureUserProfile } from "./ensure-profile";
 import { isTestPhoneNumber, isTestModeEnabled } from "@/lib/auth/test-user-utils";
 
@@ -141,7 +139,27 @@ export async function leaveWaitlist(timeSlot: string): Promise<{ error: string |
     return { error: "The deadline has passed. You cannot leave this waitlist." };
   }
 
-  const { error } = await supabase
+  // For test mode: Always use service role client to completely bypass RLS
+  let targetSupabase = supabase;
+  let isTestUser = false;
+
+  if (isTestModeEnabled()) {
+    // Use service role client to check if this is a test user (bypasses any RLS issues)
+    const serviceSupabase = await createServiceClient();
+    const { data: userData } = await serviceSupabase
+      .from('users')
+      .select('phone_number, is_test')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (userData?.is_test || (userData?.phone_number && isTestPhoneNumber(userData.phone_number))) {
+      isTestUser = true;
+      targetSupabase = serviceSupabase; // Use service role for ALL test user operations
+      console.log('🧪 TEST MODE: Using service role client for test user waitlist operations (bypassing RLS)');
+    }
+  }
+
+  const { error } = await targetSupabase
     .from("waitlist_entries")
     .delete()
     .eq("user_id", user.id)
@@ -152,6 +170,7 @@ export async function leaveWaitlist(timeSlot: string): Promise<{ error: string |
     return { error: "Could not leave the waitlist. Please try again." };
   }
 
+  console.log(`✅ Waitlist left successfully for ${isTestUser ? 'test' : 'regular'} user:`, user.id);
   revalidatePath("/circles");
   return { error: null };
 }

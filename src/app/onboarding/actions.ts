@@ -9,76 +9,18 @@ export async function saveUserInterests(interests: string[]): Promise<{ error: s
     return { error: 'Please select at least one interest to continue.' };
   }
 
-  const supabase = await createClient();
+  // SIMPLE: Use service client for all operations
+  const supabase = await createServiceClient();
+  console.log('🔍 DEBUG: Service client created');
+  
   const { data: { user } } = await supabase.auth.getUser();
-
-  // For development: Skip auth check and save to localStorage
-  // For test mode: Handle test users without auth session
-  if (isTestModeEnabled() && !user) {
-    console.log('🧪 TEST MODE: No auth session, checking for recent test users');
-    const serviceSupabase = await createServiceClient();
-    
-    // Find the most recent test user (within last 10 minutes)
-    const { data: testUsers } = await serviceSupabase
-      .from('users')
-      .select('id, phone_number')
-      .eq('is_test', true)
-      .gte('created_at', new Date(Date.now() - 10 * 60 * 1000).toISOString())
-      .order('created_at', { ascending: false })
-      .limit(1);
-    
-    if (testUsers?.length && isTestPhoneNumber(testUsers[0].phone_number)) {
-      const testUser = testUsers[0];
-      console.log('🧪 TEST MODE: Using recent test user for interests:', testUser.id);
-      
-      const interestsToInsert = interests.map(interestType => ({
-        user_id: testUser.id,
-        interest_type: interestType,
-      }));
-
-      const { error } = await serviceSupabase.from('user_interests').insert(interestsToInsert);
-
-      if (error) {
-        console.log('🔧 Error saving test user interests:', error);
-        const errorMessage = error?.message || error?.details || error?.hint || String(error);
-        
-        if (errorMessage && errorMessage.includes('duplicate key value violates unique constraint')) {
-          return { error: null };
-        }
-        
-        console.error('Error saving test user interests:', errorMessage);
-        return { error: 'Could not save your interests. Please try again.' };
-      }
-
-      console.log('✅ Interests saved successfully for test user:', testUser.id);
-      return { error: null };
-    }
-  }
-
+  console.log('🔍 DEBUG: User from service client:', user ? `ID: ${user.id}` : 'NO USER');
+  
+  // Handle unauthenticated users during onboarding
   if (!user) {
-    console.log('Development mode: Saving user interests to localStorage');
-    // This will be handled client-side in the component
+    console.log('🔍 DEBUG: No user - this is expected during onboarding');
+    // Return success - interests will be saved after login
     return { error: null };
-  }
-
-  // For test mode: Always use service role client to completely bypass RLS
-  let targetSupabase = supabase;
-  let isTestUser = false;
-
-  if (isTestModeEnabled()) {
-    // Use service role client to check if this is a test user (bypasses any RLS issues)
-    const serviceSupabase = await createServiceClient();
-    const { data: userData } = await serviceSupabase
-      .from('users')
-      .select('phone_number, is_test')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    if (userData?.is_test || (userData?.phone_number && isTestPhoneNumber(userData.phone_number))) {
-      isTestUser = true;
-      targetSupabase = serviceSupabase; // Use service role for ALL test user operations
-      console.log('🧪 TEST MODE: Using service role client for ALL test user operations (bypassing RLS)');
-    }
   }
 
   const interestsToInsert = interests.map(interestType => ({
@@ -86,30 +28,21 @@ export async function saveUserInterests(interests: string[]): Promise<{ error: s
     interest_type: interestType,
   }));
 
-  const { error } = await targetSupabase.from('user_interests').insert(interestsToInsert);
+  console.log('🔍 DEBUG: About to insert with service client:', interestsToInsert);
+  const { error } = await supabase.from('user_interests').insert(interestsToInsert);
 
   if (error) {
     console.log('🔧 Error saving user interests - error object:', error);
-    // Get error message safely from various possible error structures
-    const errorMessage = error?.message || error?.details || error?.hint || String(error);
-    console.log('🔧 Extracted errorMessage:', errorMessage);
-    
-    // Gracefully handle re-submissions without showing an error to the user
-    if (errorMessage && errorMessage.includes('duplicate key value violates unique constraint')) {
+    // Handle duplicate key gracefully
+    if (error.message?.includes('duplicate key value violates unique constraint')) {
       return { error: null };
     }
     
-    // Handle table not existing (until new schema is deployed)
-    if (errorMessage && errorMessage.includes('relation "user_interests" does not exist')) {
-      console.log('user_interests table does not exist yet - skipping interest save until schema deployment');
-      return { error: null };
-    }
-    
-    console.error('Error saving user interests:', errorMessage);
+    console.error('Error saving user interests:', error.message);
     return { error: 'Could not save your interests. Please try again.' };
   }
 
-  console.log(`✅ Interests saved successfully for ${isTestUser ? 'test' : 'regular'} user:`, user.id);
+  console.log('✅ Interests saved successfully for user:', user.id);
   return { error: null };
 }
 

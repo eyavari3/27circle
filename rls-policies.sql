@@ -30,3 +30,13 @@ CREATE POLICY "Service role can do everything on conversation_sparks" ON convers
 -- Allow authenticated users to read conversation_sparks
 CREATE POLICY "Authenticated users can view conversation_sparks" ON conversation_sparks
   FOR SELECT TO authenticated USING (true);
+
+-- User interests policies for authenticated users
+CREATE POLICY "Users can view all user interests" ON user_interests
+  FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Users can insert own user interests" ON user_interests
+  FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own user interests" ON user_interests
+  FOR DELETE TO authenticated USING (auth.uid() = user_id);
