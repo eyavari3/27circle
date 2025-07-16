@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { submitFeedback } from './actions';
+import { submitFeedback, skipFeedback } from './actions';
 
 interface FeedbackClientProps {
   timeSlot: string;
@@ -61,6 +61,28 @@ export default function FeedbackClient({ timeSlot, eventId }: FeedbackClientProp
         router.push('/circles');
       }
     } catch (err) {
+      console.error('Error submitting feedback:', err);
+      setError('An unexpected error occurred');
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSkip = async () => {
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const result = await skipFeedback(eventId);
+
+      if (result.error) {
+        setError(result.error);
+        setIsSubmitting(false);
+      } else {
+        // Redirect back to circles page after skipping
+        router.push('/circles');
+      }
+    } catch (err) {
+      console.error('Error skipping feedback:', err);
       setError('An unexpected error occurred');
       setIsSubmitting(false);
     }
@@ -193,6 +215,19 @@ export default function FeedbackClient({ timeSlot, eventId }: FeedbackClientProp
             }`}
           >
             {isSubmitting ? 'Sharing...' : 'Share Experience'}
+          </button>
+
+          {/* Skip Button */}
+          <button
+            onClick={handleSkip}
+            disabled={isSubmitting}
+            className={`w-full py-3 rounded-full font-medium transition-all ${
+              !isSubmitting
+                ? 'text-gray-600 hover:text-gray-800'
+                : 'text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            Skip
           </button>
         </div>
       </div>
