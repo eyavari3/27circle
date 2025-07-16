@@ -8,7 +8,6 @@ import LiveClock from "@/components/ui/LiveClock";
 import { useFeedbackCheck } from "@/lib/hooks/useFeedbackCheck";
 import { 
   getSlotState, 
-  formatDisplayTime, 
   formatDeadlineTime,
   getDisplayDate,
   createTimeSlots
@@ -78,7 +77,6 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
           ...slot,
           isOnWaitlist: waitlistSet.has(slot.timeSlot.time.toISOString())
         })));
-        console.log('Loaded persisted waitlist:', waitlistSet); // Debug
       } catch (e) {
         console.error('Error loading persisted waitlist:', e);
       }
@@ -102,14 +100,9 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
     
     // Check if the display date has changed (crossed 8PM boundary)
     if (currentDisplayDate.getTime() !== lastDisplayDate.getTime()) {
-      console.log('🕐 Display date changed! Regenerating slots for next day...');
-      console.log('Previous date:', lastDisplayDate.toDateString());
-      console.log('New date:', currentDisplayDate.toDateString());
-      
       // FIRST: Clear localStorage waitlist for the new day (in development)
       if (process.env.NODE_ENV === 'development') {
         localStorage.removeItem('dev-waitlist');
-        console.log('🧹 Cleared dev-waitlist for new day');
       }
       
       // Create new time slots for the new day
@@ -132,12 +125,6 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
       setTimeSlots(freshTimeSlots);
       setLastDisplayDate(currentDisplayDate);
       setJustReset(true);
-      console.log('✅ Reset complete - all slots should show "Join"');
-      console.log('Fresh slots created:', freshTimeSlots.map(s => ({
-        time: s.timeSlot.time.toLocaleTimeString(),
-        isOnWaitlist: s.isOnWaitlist,
-        buttonText: s.buttonText
-      })));
       
       // Clear the reset flag after a short delay to allow the reset to take effect
       setTimeout(() => setJustReset(false), 100);
@@ -183,7 +170,6 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
         }
       } else if (slotState === 'post-deadline') {
         if (slot.isOnWaitlist) {
-          console.log('🎉 CONFIRMED STATE TRIGGERED:', timeSlot.slot, 'at', formatDisplayTime(currentTime));
           buttonState = "confirmed";
           buttonText = "Confirmed ✓";
           isDisabled = false;
@@ -241,7 +227,6 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
           .map(s => s.timeSlot.time.toISOString());
         if (process.env.NODE_ENV === 'development') {
           localStorage.setItem('dev-waitlist', JSON.stringify(currentWaitlist));
-          console.log('Updated localStorage waitlist:', currentWaitlist); // Debug
         }
 
         return updated;
@@ -336,7 +321,6 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
           </div>
           <button 
             onClick={() => {
-              console.log('🔧 Settings button clicked, navigating to /settings');
               router.push('/settings');
             }}
             className="p-[1vw] rounded-full hover:bg-white/10 transition-colors"
