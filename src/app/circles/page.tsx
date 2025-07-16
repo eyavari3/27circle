@@ -70,7 +70,7 @@ export default async function CirclesPage() {
   );
   
   const userCircles = new Map<string, { circleId: string; circleData: CircleData }>();
-  circleData?.forEach(item => {
+  circleData?.forEach((item: any) => {
     const timeStr = new Date(item.circles.time_slot).toISOString();
     userCircles.set(timeStr, {
       circleId: item.circle_id,

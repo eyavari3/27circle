@@ -1,6 +1,24 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+interface TestUser {
+  id: string;
+  full_name: string;
+  gender: 'male' | 'female' | 'non-binary';
+  date_of_birth: string;
+  phone_number: string;
+}
+
+interface TestWaitlistEntry {
+  user_id: string;
+  time_slot: string;
+}
+
+interface TestInterestEntry {
+  user_id: string;
+  interest_type: string;
+}
+
 export async function POST() {
   try {
     // Use service role to bypass RLS
@@ -19,9 +37,9 @@ export async function POST() {
 
     console.log('🚀 Creating test users for time slots:', timeSlots.map(slot => new Date(slot).toLocaleTimeString()));
 
-    const allUsers = [];
-    const allWaitlistEntries = [];
-    const allInterestEntries = [];
+    const allUsers: TestUser[] = [];
+    const allWaitlistEntries: TestWaitlistEntry[] = [];
+    const allInterestEntries: TestInterestEntry[] = [];
 
     // Generate users for each time slot
     for (let slotIndex = 0; slotIndex < timeSlots.length; slotIndex++) {

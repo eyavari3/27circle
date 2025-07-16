@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { dbAdmin } from '@/lib/database/client';
 import { getCurrentPSTTime, getDisplayDate, getDayBoundaries } from '@/lib/time';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const currentTime = getCurrentPSTTime();
     const today = getDisplayDate(currentTime);
@@ -67,7 +67,7 @@ async function getDailyStats(startOfDay: Date, endOfDay: Date) {
     };
     
     // Count waitlist signups
-    waitlistEntries?.forEach(entry => {
+    waitlistEntries?.forEach((entry: any) => {
       const hour = new Date(entry.time_slot).getHours();
       if (hour === 11) slots['11AM'].signups++;
       else if (hour === 14) slots['2PM'].signups++;

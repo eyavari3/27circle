@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import FeedbackClient from './FeedbackClient';
-import { getCurrentPSTTime, createTimeSlots } from '@/lib/time';
+import { getCurrentPSTTime } from '@/lib/time';
 
 interface SearchParams {
   eventId?: string;
@@ -11,8 +11,10 @@ interface SearchParams {
 export default async function FeedbackPage({
   searchParams,
 }: {
-  searchParams: SearchParams;
+  searchParams: Promise<SearchParams>;
 }) {
+  const params = await searchParams;
+  
   // In development mode, skip auth check for easier testing
   if (process.env.NODE_ENV === 'development') {
     // Skip auth check in dev mode
@@ -27,11 +29,10 @@ export default async function FeedbackPage({
 
   // Get event details - for now, we'll simulate based on time slot
   const currentTime = getCurrentPSTTime();
-  const timeSlots = createTimeSlots();
   
   // If no specific eventId provided, determine from current time which event just ended
-  let targetTimeSlot = searchParams.timeSlot || 'Unknown';
-  if (!searchParams.timeSlot) {
+  let targetTimeSlot = params.timeSlot || 'Unknown';
+  if (!params.timeSlot) {
     // Find which event just ended (within 30 minutes after)
     const currentHour = currentTime.getHours();
     if (currentHour >= 11 && currentHour < 14) {
@@ -49,7 +50,7 @@ export default async function FeedbackPage({
   return (
     <FeedbackClient 
       timeSlot={targetTimeSlot}
-      eventId={searchParams.eventId || `dev-event-${targetTimeSlot}`}
+      eventId={params.eventId || `dev-event-${targetTimeSlot}`}
     />
   );
 }

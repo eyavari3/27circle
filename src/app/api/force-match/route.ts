@@ -1,14 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getCurrentPSTTime, getSlotsReadyForMatching, getTimeZoneInfo } from '@/lib/time';
 import { executeMatchingProcess } from '@/lib/matching/algorithm';
 import { 
   MatchingSlotResult, 
-  MatchingApiResponse,
-  createApiError,
-  createApiSuccess 
+  MatchingApiResponse
 } from '@/lib/database/types';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Get current PST time using centralized time system
     const pstTime = getCurrentPSTTime();
@@ -65,8 +63,7 @@ export async function GET(request: NextRequest) {
     const response: MatchingApiResponse = {
       success: true,
       processedAt: pstTime.toISOString(),
-      results,
-      message: `Force matching completed - processed ${results.length} slot(s) using age+gender algorithm`
+      results
     };
     
     return NextResponse.json(response);
@@ -85,6 +82,6 @@ export async function GET(request: NextRequest) {
 }
 
 // Allow POST for consistency with cron job
-export async function POST(request: NextRequest) {
-  return GET(request);
+export async function POST() {
+  return GET();
 }

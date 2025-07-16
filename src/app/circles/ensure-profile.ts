@@ -1,22 +1,21 @@
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 
 /**
  * Ensures user has a profile in the database
  * Creates a minimal profile if one doesn't exist
  */
-export async function ensureUserProfile() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+export async function ensureUserProfile(userId: string) {
+  const supabase = await createServiceClient();
   
-  if (!user) {
-    return { error: 'No authenticated user' };
+  if (!userId) {
+    return { error: 'No user ID provided' };
   }
   
   // Check if profile exists
   const { data: existingProfile } = await supabase
     .from('users')
     .select('id')
-    .eq('id', user.id)
+    .eq('id', userId)
     .single();
     
   if (existingProfile) {
@@ -24,13 +23,13 @@ export async function ensureUserProfile() {
   }
   
   // Create minimal profile for Google OAuth users
-  console.log('🔧 Creating profile for Google user:', user.email);
+  console.log('🔧 Creating profile for user ID:', userId);
   
-  const { error, data } = await supabase
+  const { error } = await supabase
     .from('users')
     .insert({
-      id: user.id,
-      full_name: user.email?.split('@')[0] || 'User',
+      id: userId,
+      full_name: 'User', // Default - user can update later
       gender: 'male', // Default - user can update later
       date_of_birth: '2000-01-01' // Default - user can update later
     });
@@ -46,7 +45,7 @@ export async function ensureUserProfile() {
       return { error: `Failed to create profile: ${error.message}` };
     }
   } else {
-    console.log('✅ Profile created successfully for:', user.email);
+    console.log('✅ Profile created successfully for user ID:', userId);
   }
   
   return { error: null };

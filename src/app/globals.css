@@ -110,3 +110,113 @@ a {
   object-fit: contain;
   object-position: center;
 }
+
+/* CSS-Only Logo Flash Morph Transition */
+
+/* CRITICAL: Elements must be visible by default for direct navigation */
+.curiosity-animated {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Transition overlay - starts hidden, becomes visible during transition */
+.transition-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(180deg, #152B5C 0%, #142959 100%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 50;
+  transition: opacity 0.3s ease-out;
+}
+
+/* Body class triggers all animations */
+body.transitioning-to-curiosity .splash-text {
+  opacity: 0;
+  animation: fade-out 0.3s ease-out forwards;
+}
+
+body.transitioning-to-curiosity .splash-logo {
+  animation: logo-collapse 0.4s ease-out 0.3s forwards;
+}
+
+body.transitioning-to-curiosity .transition-overlay {
+  opacity: 1;
+  animation: overlay-fade-to-white 0.4s ease-out 0.3s forwards;
+}
+
+body.transitioning-to-curiosity .curiosity-animated {
+  opacity: 0;
+  animation: none; /* Reset any existing animations */
+}
+
+body.transitioning-to-curiosity .curiosity-animated.title {
+  animation: fade-slide-up 0.4s ease-out 0.8s forwards;
+}
+
+body.transitioning-to-curiosity .curiosity-animated.brain {
+  animation: fade-slide-up 0.4s ease-out 0.8s forwards;
+}
+
+body.transitioning-to-curiosity .curiosity-animated.button {
+  animation: fade-slide-up 0.3s ease-out 1.0s forwards;
+}
+
+/* Keyframes for transition effects */
+@keyframes fade-out {
+  to { opacity: 0; }
+}
+
+@keyframes logo-collapse {
+  from {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1.2) drop-shadow(0 0 20px rgba(255,255,255,0.8));
+  }
+  to {
+    opacity: 0;
+    transform: scale(0);
+    filter: brightness(2) drop-shadow(0 0 40px rgba(255,255,255,1));
+  }
+}
+
+@keyframes overlay-fade-to-white {
+  to { 
+    background: #ffffff;
+    opacity: 0;
+  }
+}
+
+@keyframes fade-slide-up {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0);
+  }
+}
+
+/* Accessibility: Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  body.transitioning-to-curiosity * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  @keyframes fade-slide-up {
+    from { 
+      opacity: 0; 
+      transform: translateY(10px); /* Reduced movement on mobile */
+    }
+    to { 
+      opacity: 1; 
+      transform: translateY(0);
+    }
+  }
+}

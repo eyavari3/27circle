@@ -3,8 +3,6 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { getCurrentPSTTime, parseTimeSlotString, isValidTimeSlot, createTimeSlots, getDisplayDate } from "@/lib/time";
-import { db } from "@/lib/database/client";
-import { ApiResponse } from "@/lib/database/types";
 import { ensureUserProfile } from "./ensure-profile";
 import { isTestPhoneNumber, isTestModeEnabled } from "@/lib/auth/test-user-utils";
 
@@ -12,8 +10,12 @@ export async function joinWaitlist(timeSlot: string): Promise<{ error: string | 
   try {
     console.log('🎯 joinWaitlist called with timeSlot:', timeSlot);
     
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Use regular client for auth (has session access)
+    const authSupabase = await createClient();
+    const { data: { user }, error: authError } = await authSupabase.auth.getUser();
+    
+    // Use service client for database operations (bypasses RLS)
+    const supabase = await createServiceClient();
     
     if (authError) {
       console.error('❌ Auth error in joinWaitlist:', authError);
@@ -32,7 +34,7 @@ export async function joinWaitlist(timeSlot: string): Promise<{ error: string | 
     console.log('✅ User authenticated:', user.email, 'ID:', user.id);
     
     // Ensure user has a profile (for Google OAuth users)
-    const profileResult = await ensureUserProfile();
+    const profileResult = await ensureUserProfile(user.id);
     if (profileResult.error) {
       console.error('❌ Profile creation failed:', profileResult.error);
       return { error: "Failed to create user profile. Please try again." };
@@ -61,27 +63,7 @@ export async function joinWaitlist(timeSlot: string): Promise<{ error: string | 
     return { error: "The deadline to join this circle has passed." };
   }
 
-  // For test mode: Always use service role client to completely bypass RLS
-  let targetSupabase = supabase;
-  let isTestUser = false;
-
-  if (isTestModeEnabled()) {
-    // Use service role client to check if this is a test user (bypasses any RLS issues)
-    const serviceSupabase = await createServiceClient();
-    const { data: userData } = await serviceSupabase
-      .from('users')
-      .select('phone_number, is_test')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    if (userData?.is_test || (userData?.phone_number && isTestPhoneNumber(userData.phone_number))) {
-      isTestUser = true;
-      targetSupabase = serviceSupabase; // Use service role for ALL test user operations
-      console.log('🧪 TEST MODE: Using service role client for test user waitlist operations (bypassing RLS)');
-    }
-  }
-
-  const { error } = await targetSupabase
+  const { error } = await supabase
     .from("waitlist_entries")
     .insert({
       user_id: user.id,
@@ -96,7 +78,7 @@ export async function joinWaitlist(timeSlot: string): Promise<{ error: string | 
     return { error: "Could not join the waitlist. Please try again." };
   }
 
-  console.log(`✅ Waitlist joined successfully for ${isTestUser ? 'test' : 'regular'} user:`, user.id);
+  console.log('✅ Waitlist joined successfully for user:', user.id);
   revalidatePath("/circles");
   return { error: null };
   } catch (error) {
@@ -106,8 +88,12 @@ export async function joinWaitlist(timeSlot: string): Promise<{ error: string | 
 }
 
 export async function leaveWaitlist(timeSlot: string): Promise<{ error: string | null }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // Use regular client for auth (has session access)
+  const authSupabase = await createClient();
+  const { data: { user } } = await authSupabase.auth.getUser();
+  
+  // Use service client for database operations (bypasses RLS)
+  const supabase = await createServiceClient();
 
   // For development: Skip database operations if no auth
   if (!user) {

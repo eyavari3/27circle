@@ -200,7 +200,7 @@ export default function InterestSelection({
           style={contentShiftUp ? { transform: 'translateY(-3.75rem)' } : {}}
         >
           {/* Title and subtitle */}
-          <div className="text-center mb-8">
+          <div className="curiosity-animated title text-center mb-8">
             <h1 
               className="font-medium mb-3"
               style={{ 
@@ -248,7 +248,7 @@ export default function InterestSelection({
 
           {/* Brain Container - Unified presentation */}
           <div 
-            className="brain-container relative mx-auto"
+            className="curiosity-animated brain brain-container relative mx-auto"
             style={{ 
               width: contentShiftUp ? '24.25rem' : '24.5rem', // Tighter for hearts: 388px vs 392px
               height: '17.5rem', // 280px in rem (200px * 1.4) 
@@ -329,7 +329,7 @@ export default function InterestSelection({
 
         {/* Button Container - Fixed at bottom */}
         <div 
-          className="button-container mt-auto"
+          className="curiosity-animated button button-container mt-auto"
           style={contentShiftUp ? { transform: 'translateY(-3.75rem)' } : {}}
         >
           {error && (

@@ -12,6 +12,7 @@ import {
   MatchingSlotResult, 
   Circle,
   WaitlistEntry,
+  WaitlistQueryResult,
   Location,
   ConversationSpark,
   ApiResponse,
@@ -252,7 +253,7 @@ export async function executeMatchingProcess(slot: TimeSlot): Promise<ApiRespons
     // Step 1: Validate slot timing
     const validation = await validateSlotForMatching(slot);
     if (!validation.success) {
-      return validation;
+      return createApiError(new Error(validation.error || 'Slot validation failed'), 'executeMatchingProcess');
     }
     
     // Step 2: Get waitlist users

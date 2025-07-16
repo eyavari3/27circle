@@ -139,6 +139,7 @@ export interface MatchingApiResponse {
   processedAt: string;
   results: MatchingSlotResult[];
   error?: string;
+  message?: string;
 }
 
 // =============================================================================
@@ -253,8 +254,8 @@ export function isValidCircleStatus(status: string): status is Circle['status'] 
   return ['forming', 'active', 'completed', 'cancelled'].includes(status);
 }
 
-export function isValidGender(gender: string): gender is User['gender'] {
-  return ['male', 'female', 'non-binary'].includes(gender);
+export function isValidGender(gender: string | null): gender is User['gender'] {
+  return gender !== null && ['male', 'female', 'non-binary'].includes(gender);
 }
 
 // =============================================================================

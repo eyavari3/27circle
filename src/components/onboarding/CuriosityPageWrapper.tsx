@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from 'react';
 import InterestSelection, { type Option } from '@/components/onboarding/InterestSelection';
 
 export default function CuriosityPageWrapper() {
@@ -18,8 +19,24 @@ export default function CuriosityPageWrapper() {
     }
   ];
 
+  useEffect(() => {
+    // Clean up transition class after animations complete
+    const cleanupTimer = setTimeout(() => {
+      document.body.classList.remove('transitioning-to-curiosity');
+    }, 1200); // Total animation duration
+
+    return () => {
+      clearTimeout(cleanupTimer);
+      // Always clean up on unmount
+      document.body.classList.remove('transitioning-to-curiosity');
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen w-full">
+    <div className="min-h-screen w-full relative">
+      {/* Transition overlay for CSS-only animation */}
+      <div className="transition-overlay" />
+      
       <InterestSelection
         title="What sparks your curiosity?"
         subtitle="Select one or both themes to meet and chat with up to 3 others."

@@ -176,7 +176,7 @@ export class DatabaseClient {
           return createApiSuccess([]);
         }
         
-        const userIds = waitlistData.map(entry => entry.user_id);
+        const userIds = waitlistData.map((entry: any) => entry.user_id);
         
         // Get user data with interests
         const { data: usersData, error: usersError } = await supabase
@@ -195,7 +195,7 @@ export class DatabaseClient {
         }
         
         // Transform to expected format
-        const transformedData = usersData?.map(user => ({
+        const transformedData = usersData?.map((user: any) => ({
           user_id: user.id,
           users: user
         })) || [];
@@ -433,7 +433,7 @@ export class DatabaseClient {
         .not('location_id', 'is', null);
 
       const usedLocationIds = new Set(
-        assignedLocations?.map(c => c.location_id) || []
+        assignedLocations?.map((c: any) => c.location_id) || []
       );
 
       // Get all locations
@@ -448,7 +448,7 @@ export class DatabaseClient {
 
       // Filter out used locations
       const availableLocations = (data || []).filter(
-        location => !usedLocationIds.has(location.id)
+        (location: any) => !usedLocationIds.has(location.id)
       );
 
       return createApiSuccess(availableLocations);

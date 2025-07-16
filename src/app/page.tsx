@@ -1,12 +1,12 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import TransitionContainer from "@/components/onboarding/TransitionContainer";
+import SplashScreen from "@/components/onboarding/SplashScreen";
 
 export default async function Home() {
   // In development mode, check localStorage for completed onboarding
   if (process.env.NODE_ENV === 'development') {
     // For development, we'll handle this client-side since we can't access localStorage on server
-    return <TransitionContainer />;
+    return <SplashScreen />;
   }
 
   // Production auth check
@@ -39,5 +39,5 @@ export default async function Home() {
     redirect('/login');
   }
 
-  return <TransitionContainer />;
+  return <SplashScreen />;
 }
