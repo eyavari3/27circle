@@ -27,7 +27,6 @@ export function useFeedbackCheck(userId?: string) {
 
     // Check if we're in a feedback window
     const feedbackWindow = currentFeedbackWindow;
-    console.log('🔍 Feedback check:', { feedbackWindow, userId, pathname });
     
     if (!feedbackWindow || !userId) {
       return;
@@ -36,10 +35,8 @@ export function useFeedbackCheck(userId?: string) {
     // Check if user attended this event (simplified for dev mode)
     if (process.env.NODE_ENV === 'development') {
       const devWaitlist = localStorage.getItem('dev-waitlist');
-      console.log('📋 Dev waitlist:', devWaitlist);
       
       if (!devWaitlist) {
-        console.log('❌ No waitlist found, skipping feedback check');
         return;
       }
 
@@ -47,29 +44,30 @@ export function useFeedbackCheck(userId?: string) {
         const waitlistEvents = JSON.parse(devWaitlist) as string[];
         const eventTime = feedbackWindow.timeSlot.time.toISOString();
         
-        console.log('🎯 Checking if user attended:', { waitlistEvents, eventTime });
-        
         // Check if user was on waitlist for this event
         const wasOnWaitlist = waitlistEvents.includes(eventTime);
         if (!wasOnWaitlist) {
-          console.log('❌ User was not on waitlist for this event');
           return;
         }
 
-        // Check if feedback already submitted
+        // Check if feedback already submitted or skipped
         const feedbackKey = `feedback-${userId}-dev-event-${feedbackWindow.timeSlot.slot}`;
         const existingFeedback = localStorage.getItem(feedbackKey);
-        console.log('✅ Feedback check:', { feedbackKey, existingFeedback });
         
         if (existingFeedback) {
-          console.log('✅ Feedback already submitted');
-          return;
+          try {
+            const feedbackRecord = JSON.parse(existingFeedback);
+            // If feedback was submitted or skipped, don't show popup
+            if (feedbackRecord.status === 'submitted' || feedbackRecord.status === 'skipped') {
+              return;
+            }
+          } catch (e) {
+            console.error('Error parsing feedback record:', e);
+          }
         }
 
-        // User needs to provide feedback - redirect
-        console.log('🔒 Feedback required for', feedbackWindow.timeSlot.slot, 'event - would redirect to feedback');
-        // Commented out auto-redirect since we now use clickable button
-        // router.push(`/feedback?timeSlot=${feedbackWindow.timeSlot.slot}&eventId=dev-event-${feedbackWindow.timeSlot.slot}`);
+        // User needs to provide feedback - show popup button
+        // The popup button is already rendered in CirclesClient.tsx
       } catch (e) {
         console.error('Error checking feedback requirements:', e);
       }
