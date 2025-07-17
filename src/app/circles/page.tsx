@@ -71,13 +71,13 @@ export default async function CirclesPage() {
   
   const userCircles = new Map<string, { circleId: string; circleData: CircleData }>();
   circleData?.forEach(item => {
-    const timeStr = new Date(item.circles.time_slot).toISOString();
+    const timeStr = new Date(item.circles[0].time_slot).toISOString();
     userCircles.set(timeStr, {
       circleId: item.circle_id,
       circleData: {
         circleId: item.circle_id,
-        locationName: item.circles.locations?.name || "Location TBD",
-        sparkText: item.circles.conversation_sparks?.spark_text || "Conversation spark TBD"
+        locationName: item.circles[0].locations[0]?.name || "Location TBD",
+        sparkText: item.circles[0].conversation_sparks[0]?.spark_text || "Conversation spark TBD"
       }
     });
   });

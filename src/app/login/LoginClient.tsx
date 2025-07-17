@@ -118,7 +118,7 @@ export default function LoginClient() {
       // Get OAuth configuration based on environment and flow
       const source = searchParams.get('source');
       const oauthConfig = getGoogleOAuthConfig({
-        source,
+        source: source || undefined,
         next: source === 'onboarding' ? '/onboarding/profile' : undefined
       });
 

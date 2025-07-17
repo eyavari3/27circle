@@ -193,10 +193,15 @@ export async function withErrorHandling<T>(
 
 // Health check logger
 export function logHealthCheck(status: 'healthy' | 'warning' | 'error', checks: Record<string, string>) {
-  const level = status === 'healthy' ? LogLevel.INFO : status === 'warning' ? LogLevel.WARN : LogLevel.ERROR;
   const message = `Health check: ${status}`;
   
-  logger.system.log(level, message, { checks });
+  if (status === 'healthy') {
+    logger.system.info(message, { checks });
+  } else if (status === 'warning') {
+    logger.system.warn(message, { checks });
+  } else {
+    logger.system.error(message, undefined, { checks });
+  }
 }
 
 // Startup/shutdown logger

@@ -67,7 +67,7 @@ async function getDailyStats(startOfDay: Date, endOfDay: Date) {
     };
     
     // Count waitlist signups
-    waitlistEntries?.forEach(entry => {
+    waitlistEntries?.forEach((entry: any) => {
       const hour = new Date(entry.time_slot).getHours();
       if (hour === 11) slots['11AM'].signups++;
       else if (hour === 14) slots['2PM'].signups++;
@@ -75,7 +75,7 @@ async function getDailyStats(startOfDay: Date, endOfDay: Date) {
     });
     
     // Count circles and matched users
-    circles?.forEach(circle => {
+    circles?.forEach((circle: any) => {
       const hour = new Date(circle.time_slot).getHours();
       const memberCount = circle.circle_members?.length || 0;
       
@@ -122,14 +122,14 @@ async function getRecentCircles() {
       .order('created_at', { ascending: false })
       .limit(10);
     
-    return circles?.map(circle => ({
+    return circles?.map((circle: any) => ({
       id: circle.id,
       timeSlot: circle.time_slot,
       status: circle.status,
       location: circle.locations?.name,
       spark: circle.conversation_sparks?.spark_text?.substring(0, 50) + '...',
       memberCount: circle.circle_members?.length || 0,
-      members: circle.circle_members?.map(member => ({
+      members: circle.circle_members?.map((member: any) => ({
         name: member.users?.full_name,
         gender: member.users?.gender
       })) || []
@@ -175,7 +175,7 @@ async function getWaitlistSummary(startOfDay: Date, endOfDay: Date) {
       }
     };
     
-    waitlist?.forEach(entry => {
+    waitlist?.forEach((entry: any) => {
       // Count by time slot
       const hour = new Date(entry.time_slot).getHours();
       if (hour === 11) summary.byTimeSlot['11AM']++;
@@ -189,7 +189,7 @@ async function getWaitlistSummary(startOfDay: Date, endOfDay: Date) {
       }
       
       // Count by interests
-      entry.users?.user_interests?.forEach(interest => {
+      entry.users?.user_interests?.forEach((interest: any) => {
         const interestType = interest.interest_type;
         if (interestType in summary.byInterest) {
           summary.byInterest[interestType as keyof typeof summary.byInterest]++;
