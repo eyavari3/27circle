@@ -22,6 +22,11 @@ export function useFeedbackCheck(userId?: string) {
   }, [getNow]);
 
   useEffect(() => {
+    // Check if feedback is enabled globally
+    if (!FEEDBACK_ENABLED) {
+      return;
+    }
+
     // Don't redirect if already on feedback page or auth pages
     if (pathname.startsWith('/feedback') || pathname.startsWith('/auth') || pathname.startsWith('/onboarding')) {
       return;

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import FeedbackClient from './FeedbackClient';
 import { getCurrentPSTTime, createTimeSlots } from '@/lib/time';
+import { FEEDBACK_ENABLED } from '@/lib/constants';
 
 interface SearchParams {
   eventId?: string;
@@ -14,6 +15,12 @@ export default async function FeedbackPage({
   searchParams: SearchParams;
 }) {
   const awaitedSearchParams = await searchParams;
+  
+  // Redirect if feedback is disabled
+  if (!FEEDBACK_ENABLED) {
+    redirect('/circles');
+  }
+  
   // In development mode, skip auth check for easier testing
   if (process.env.NODE_ENV === 'development') {
     // Skip auth check in dev mode
