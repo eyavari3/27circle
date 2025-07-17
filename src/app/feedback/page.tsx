@@ -13,6 +13,7 @@ export default async function FeedbackPage({
 }: {
   searchParams: SearchParams;
 }) {
+  const awaitedSearchParams = await searchParams;
   // In development mode, skip auth check for easier testing
   if (process.env.NODE_ENV === 'development') {
     // Skip auth check in dev mode
@@ -30,8 +31,8 @@ export default async function FeedbackPage({
   const timeSlots = createTimeSlots();
   
   // If no specific eventId provided, determine from current time which event just ended
-  let targetTimeSlot = searchParams.timeSlot || 'Unknown';
-  if (!searchParams.timeSlot) {
+  let targetTimeSlot = awaitedSearchParams.timeSlot || 'Unknown';
+  if (!awaitedSearchParams.timeSlot) {
     // Find which event just ended (within 30 minutes after)
     const currentHour = currentTime.getHours();
     if (currentHour >= 11 && currentHour < 14) {
@@ -49,7 +50,7 @@ export default async function FeedbackPage({
   return (
     <FeedbackClient 
       timeSlot={targetTimeSlot}
-      eventId={searchParams.eventId || `dev-event-${targetTimeSlot}`}
+      eventId={awaitedSearchParams.eventId || `dev-event-${targetTimeSlot}`}
     />
   );
 }

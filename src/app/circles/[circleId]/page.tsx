@@ -43,9 +43,21 @@ export default function UpcomingCirclePage() {
     fetchCircleData();
   }, [params.circleId]);
   
+  // Dynamic time slot based on circleId
+  const getTimeSlot = (circleId: string) => {
+    if (circleId.includes('11') || circleId.includes('11AM')) {
+      return "11:00 AM - 11:20 AM";
+    } else if (circleId.includes('14') || circleId.includes('2PM')) {
+      return "02:00 PM - 02:20 PM";
+    } else if (circleId.includes('17') || circleId.includes('5PM')) {
+      return "05:00 PM - 05:20 PM";
+    }
+    return "02:00 PM - 02:20 PM"; // Fallback
+  };
+
   // Mock data fallback for development
   const circleData = {
-    timeSlot: "02:00 PM - 02:20 PM",
+    timeSlot: getTimeSlot(params.circleId as string),
     spark: spark || "What's one of the major problems that you see on campus?",
     location: location?.name ? `Stanford University - ${location.name}` : "Stanford University - Old Union",
     mapUrl: "/api/placeholder/map" // This would be a real map in production

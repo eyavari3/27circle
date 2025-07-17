@@ -44,26 +44,32 @@ export default function FeedbackClient({ timeSlot, eventId }: FeedbackClientProp
     setIsSubmitting(true);
     setError('');
 
-    try {
-      const result = await submitFeedback({
-        eventId,
-        attendanceCount: attendanceCount || 0,
-        didNotAttend,
-        rating: rating || undefined,
-        memorableMoment: memorableMoment.trim() || undefined,
-      });
+    const feedbackData = {
+      eventId,
+      attendanceCount: attendanceCount || 0,
+      didNotAttend,
+      rating: rating || undefined,
+      memorableMoment: memorableMoment.trim() || undefined,
+    };
 
-      if (result.error) {
-        setError(result.error);
-        setIsSubmitting(false);
-      } else {
-        // Redirect back to circles page after successful submission
-        router.push('/circles');
-      }
-    } catch (err) {
-      console.error('Error submitting feedback:', err);
-      setError('An unexpected error occurred');
+    // Save to localStorage immediately (instant UI feedback)
+    const savedToLocal = saveFeedbackToLocalStorage(eventId, feedbackData);
+    
+    if (!savedToLocal) {
+      setError('Failed to save feedback locally');
       setIsSubmitting(false);
+      return;
+    }
+
+    // Redirect immediately since localStorage is saved (instant UX)
+    router.push('/circles');
+
+    // Optional: Background server logging (non-blocking)
+    try {
+      await submitFeedback(feedbackData);
+    } catch (err) {
+      console.error('Background server logging failed:', err);
+      // Don't show error to user since localStorage already succeeded
     }
   };
 
@@ -71,20 +77,65 @@ export default function FeedbackClient({ timeSlot, eventId }: FeedbackClientProp
     setIsSubmitting(true);
     setError('');
 
-    try {
-      const result = await skipFeedback(eventId);
-
-      if (result.error) {
-        setError(result.error);
-        setIsSubmitting(false);
-      } else {
-        // Redirect back to circles page after skipping
-        router.push('/circles');
-      }
-    } catch (err) {
-      console.error('Error skipping feedback:', err);
-      setError('An unexpected error occurred');
+    // Save skip status to localStorage immediately (instant UI feedback)
+    const savedToLocal = saveSkipToLocalStorage(eventId);
+    
+    if (!savedToLocal) {
+      setError('Failed to save skip status locally');
       setIsSubmitting(false);
+      return;
+    }
+
+    // Redirect immediately since localStorage is saved (instant UX)
+    router.push('/circles');
+
+    // Optional: Background server logging (non-blocking)
+    try {
+      await skipFeedback(eventId);
+    } catch (err) {
+      console.error('Background server logging failed:', err);
+      // Don't show error to user since localStorage already succeeded
+    }
+  };
+
+  // Client-side localStorage functions (fix for server action localStorage bug)
+  const saveFeedbackToLocalStorage = (eventId: string, data: any) => {
+    const feedbackKey = `feedback-dev-user-${eventId}`;
+    const record = {
+      userId: 'dev-user-id',
+      eventId: eventId,
+      attendanceCount: data.attendanceCount,
+      didNotAttend: data.didNotAttend,
+      rating: data.rating,
+      memorableMoment: data.memorableMoment,
+      submittedAt: new Date().toISOString(),
+      status: 'submitted' as const,
+    };
+    
+    try {
+      localStorage.setItem(feedbackKey, JSON.stringify(record));
+      return true;
+    } catch (e) {
+      console.error('Error saving feedback to localStorage:', e);
+      return false;
+    }
+  };
+
+  const saveSkipToLocalStorage = (eventId: string) => {
+    const feedbackKey = `feedback-dev-user-${eventId}`;
+    const record = {
+      userId: 'dev-user-id',
+      eventId: eventId,
+      skippedAt: new Date().toISOString(),
+      status: 'skipped' as const,
+    };
+    
+    try {
+      localStorage.setItem(feedbackKey, JSON.stringify(record));
+      return true;
+    } catch (e) {
+      console.error('Error saving skip status to localStorage:', e);
+      return false;
     }
   };
 

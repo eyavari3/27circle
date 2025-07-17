@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useCurrentTime } from './useCurrentTime';
 import { getCurrentFeedbackWindow } from '../time';
+import { FEEDBACK_ENABLED } from '../constants';
 
 /**
  * Hook to check if user needs to provide feedback and redirect if necessary
@@ -13,6 +14,7 @@ export function useFeedbackCheck(userId?: string) {
   const router = useRouter();
   const pathname = usePathname();
   const { getNow } = useCurrentTime();
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Memoized feedback window computation
   const currentFeedbackWindow = useMemo(() => {
@@ -66,13 +68,35 @@ export function useFeedbackCheck(userId?: string) {
           }
         }
 
-        // User needs to provide feedback - show popup button
-        // The popup button is already rendered in CirclesClient.tsx
+        // Check if auto-popup should trigger (60 mins after event start)
+        const eventStartTime = feedbackWindow.timeSlot.time;
+        const autoPopupTime = new Date(eventStartTime);
+        autoPopupTime.setMinutes(autoPopupTime.getMinutes() + 60); // 60 minutes after start
+        
+        const currentTime = getNow();
+        const shouldAutoPopup = currentTime >= autoPopupTime;
+        
+        console.log('🎯 Feedback Auto-Popup Check:', {
+          eventStart: eventStartTime.toLocaleTimeString(),
+          autoPopupTime: autoPopupTime.toLocaleTimeString(),
+          currentTime: currentTime.toLocaleTimeString(),
+          shouldAutoPopup,
+          isNavigating,
+          timeSlot: feedbackWindow.timeSlot.slot
+        });
+        
+        // Auto-popup if time has come and not already navigating
+        if (shouldAutoPopup && !isNavigating) {
+          console.log('🚀 Auto-popup triggering for feedback');
+          setIsNavigating(true);
+          const timeSlot = feedbackWindow.timeSlot.slot;
+          router.push(`/feedback?timeSlot=${timeSlot}&eventId=dev-event-${timeSlot}`);
+        }
       } catch (e) {
         console.error('Error checking feedback requirements:', e);
       }
     }
-  }, [currentFeedbackWindow, pathname, router, userId]);
+  }, [currentFeedbackWindow, pathname, router, userId, isNavigating, getNow]);
 
   return {
     currentFeedbackWindow,

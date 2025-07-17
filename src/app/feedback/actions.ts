@@ -34,27 +34,32 @@ export async function submitFeedback(data: FeedbackData) {
       return { error: 'Invalid attendance count' };
     }
 
-    // For development, we'll store feedback in localStorage since we don't have full database setup
+    // For development, save to Supabase (localStorage handled by client)
     if (process.env.NODE_ENV === 'development') {
-      const feedbackKey = `feedback-${userId}-${data.eventId}`;
-      const feedbackRecord = {
-        userId: userId,
+      const supabase = await createClient();
+      const { error } = await supabase
+        .from('feedback')
+        .insert({
+          user_id: userId,
+          event_id: data.eventId,
+          attendance_count: data.attendanceCount,
+          did_not_attend: data.didNotAttend,
+          rating: data.rating,
+          memorable_moment: data.memorableMoment,
+        });
+
+      if (error) {
+        console.error('Database error:', error);
+        return { error: 'Failed to save feedback to database' };
+      }
+
+      console.log('📝 Feedback saved to Supabase:', {
+        userId,
         eventId: data.eventId,
         attendanceCount: data.attendanceCount,
         didNotAttend: data.didNotAttend,
         rating: data.rating,
-        memorableMoment: data.memorableMoment,
-        submittedAt: new Date().toISOString(),
-        status: 'submitted' as const,
-      };
-      
-      // Store in localStorage (this will work because it's called from client-side)
-      try {
-        localStorage.setItem(feedbackKey, JSON.stringify(feedbackRecord));
-      } catch (e) {
-        console.error('Error saving feedback to localStorage:', e);
-        return { error: 'Failed to save feedback locally' };
-      }
+      });
       
       return { success: true };
     }
@@ -99,22 +104,30 @@ export async function skipFeedback(eventId: string) {
       userId = user.id;
     }
 
-    // For development, store skip status in localStorage
+    // For development, save skip to Supabase (localStorage handled by client)
     if (process.env.NODE_ENV === 'development') {
-      const feedbackKey = `feedback-${userId}-${eventId}`;
-      const skipRecord = {
-        userId: userId,
-        eventId: eventId,
-        skippedAt: new Date().toISOString(),
-        status: 'skipped' as const,
-      };
-      
-      try {
-        localStorage.setItem(feedbackKey, JSON.stringify(skipRecord));
-      } catch (e) {
-        console.error('Error saving skip status to localStorage:', e);
-        return { error: 'Failed to save skip status locally' };
+      const supabase = await createClient();
+      const { error } = await supabase
+        .from('feedback')
+        .insert({
+          user_id: userId,
+          event_id: eventId,
+          attendance_count: 0,
+          did_not_attend: true,
+          rating: null,
+          memorable_moment: null,
+        });
+
+      if (error) {
+        console.error('Database error:', error);
+        return { error: 'Failed to save skip status to database' };
       }
+
+      console.log('⏭️ Feedback skip saved to Supabase:', {
+        userId,
+        eventId,
+        skippedAt: new Date().toISOString(),
+      });
       
       return { success: true };
     }
@@ -159,22 +172,11 @@ export async function checkFeedbackStatus(eventId: string) {
       userId = user.id;
     }
 
-    // For development, check localStorage
+    // For development, localStorage check handled by client-side
     if (process.env.NODE_ENV === 'development') {
-      const feedbackKey = `feedback-${userId}-${eventId}`;
-      const existingFeedback = localStorage.getItem(feedbackKey);
-      
-      if (!existingFeedback) {
-        return { status: 'not-submitted' as const };
-      }
-
-      try {
-        const feedbackRecord = JSON.parse(existingFeedback);
-        return { status: feedbackRecord.status || 'submitted' as const };
-      } catch (e) {
-        console.error('Error parsing feedback record:', e);
-        return { status: 'not-submitted' as const };
-      }
+      // Server actions can't access localStorage, so return not-submitted
+      // Client-side components will check localStorage directly
+      return { status: 'not-submitted' as const };
     }
 
     // In production, query the database
@@ -213,7 +215,7 @@ export async function checkPendingFeedback() {
       // and don't have feedback yet. For now, we'll implement basic logic.
       
       // Check if there are any dev events that need feedback
-      const devWaitlist = localStorage.getItem('dev-waitlist');
+      const devWaitlist = typeof window !== 'undefined' ? localStorage.getItem('dev-waitlist') : null;
       if (devWaitlist) {
         try {
           // Check if any events need feedback (simplified logic)

@@ -305,11 +305,11 @@ export function getCurrentFeedbackWindow(currentTime?: Date): FeedbackWindow | n
     const eventEndTime = new Date(slot.time);
     eventEndTime.setMinutes(eventEndTime.getMinutes() + 20); // Event lasts 20 minutes
     
-    const feedbackStartTime = new Date(eventEndTime);
-    feedbackStartTime.setMinutes(feedbackStartTime.getMinutes() + 10); // 10 minutes after event ends
+    const feedbackStartTime = new Date(eventEndTime); // Feedback available immediately after event ends (no buffer)
     
-    const feedbackEndTime = new Date(feedbackStartTime);
-    feedbackEndTime.setMinutes(feedbackEndTime.getMinutes() + 30); // 30 minute feedback window
+    // Feedback window lasts until 8PM PST (daily reset)
+    const feedbackEndTime = new Date(slot.time);
+    feedbackEndTime.setHours(20, 0, 0, 0); // 8PM PST
     
     console.log(`📅 Event timing for ${slot.slot}:`, {
       eventStart: slot.time.toLocaleTimeString(),

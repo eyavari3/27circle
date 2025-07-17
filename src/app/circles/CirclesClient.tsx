@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { TimeSlotWithUserStatus } from "@/lib/types";
 import { useCurrentTime } from "@/lib/hooks/useCurrentTime";
+import { FEEDBACK_ENABLED } from "@/lib/constants";
 
 import LiveClock from "@/components/ui/LiveClock";
 import { useFeedbackCheck } from "@/lib/hooks/useFeedbackCheck";
@@ -154,8 +155,27 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
       let buttonText: string;
       let isDisabled: boolean;
 
-      if (slotState === 'feedback-available') {
-        if (slot.isOnWaitlist) {
+      // Check if feedback was submitted (override state if so)
+      const feedbackKey = `feedback-dev-user-dev-event-${timeSlot.slot}`;
+      const feedbackRecord = typeof window !== 'undefined' ? localStorage.getItem(feedbackKey) : null;
+      let feedbackSubmitted = false;
+      
+      if (feedbackRecord) {
+        try {
+          const record = JSON.parse(feedbackRecord);
+          feedbackSubmitted = record.status === 'submitted' || record.status === 'skipped';
+        } catch (e) {
+          // Ignore parsing errors
+        }
+      }
+
+      if (feedbackSubmitted && slotState === 'feedback-available') {
+        // Override: Show "Past" if feedback was submitted
+        buttonState = "past";
+        buttonText = "Past";
+        isDisabled = true;
+      } else if (slotState === 'feedback-available') {
+        if (FEEDBACK_ENABLED && slot.isOnWaitlist) {
           buttonState = "feedback";
           buttonText = "Feedback";
           isDisabled = false;
@@ -357,14 +377,6 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
         <div className="text-center">
           <h1 className="text-[4.5vw] min-text-2xl max-text-3xl font-bold text-white mb-[1vh]">Today&apos;s Circles</h1>
           <p className="text-gray-300 text-[3vw] min-text-sm max-text-base">New conversations waiting to happen</p>
-          {currentFeedbackWindow && (
-            <button
-              onClick={() => router.push(`/feedback?timeSlot=${currentFeedbackWindow.timeSlot.slot}&eventId=dev-event-${currentFeedbackWindow.timeSlot.slot}`)}
-              className="mt-2 px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white text-xs rounded-full inline-block transition-colors cursor-pointer"
-            >
-              📝 Feedback needed for {currentFeedbackWindow.timeSlot.slot} event - Click here
-            </button>
-          )}
         </div>
       </div>
 
