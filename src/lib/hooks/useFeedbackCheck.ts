@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useCurrentTime } from './useCurrentTime';
 import { getCurrentFeedbackWindow } from '../time';
-import { FEEDBACK_ENABLED } from '../constants';
+import { FEEDBACK_ENABLED, UPDATE_INTERVAL } from '../constants';
 
 /**
  * Hook to check if user needs to provide feedback and redirect if necessary
@@ -15,11 +15,25 @@ export function useFeedbackCheck(userId?: string) {
   const pathname = usePathname();
   const { getNow } = useCurrentTime();
   const [isNavigating, setIsNavigating] = useState(false);
+  const [currentTime, setCurrentTime] = useState(() => getNow());
+
+  // Update time on interval to reduce re-renders
+  useEffect(() => {
+    const updateTime = () => {
+      setCurrentTime(getNow());
+    };
+    
+    const intervalId = setInterval(updateTime, UPDATE_INTERVAL);
+    
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [getNow]);
 
   // Memoized feedback window computation
   const currentFeedbackWindow = useMemo(() => {
-    return getCurrentFeedbackWindow(getNow());
-  }, [getNow]);
+    return getCurrentFeedbackWindow(currentTime);
+  }, [currentTime]);
 
   useEffect(() => {
     // Check if feedback is enabled globally
@@ -78,7 +92,6 @@ export function useFeedbackCheck(userId?: string) {
         const autoPopupTime = new Date(eventStartTime);
         autoPopupTime.setMinutes(autoPopupTime.getMinutes() + 60); // 60 minutes after start
         
-        const currentTime = getNow();
         const shouldAutoPopup = currentTime >= autoPopupTime;
         
         console.log('🎯 Feedback Auto-Popup Check:', {

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { TimeSlotWithUserStatus } from "@/lib/types";
 import { useCurrentTime } from "@/lib/hooks/useCurrentTime";
-import { FEEDBACK_ENABLED } from "@/lib/constants";
+import { FEEDBACK_ENABLED, UPDATE_INTERVAL } from "@/lib/constants";
 
 import LiveClock from "@/components/ui/LiveClock";
 import { useFeedbackCheck } from "@/lib/hooks/useFeedbackCheck";
@@ -28,8 +28,43 @@ interface CirclesClientProps {
 export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesClientProps) {
   const { getNow } = useCurrentTime(serverTime);
   
-  // Get current time once per render to avoid infinite loops
-  const currentTime = getNow();
+  // Use state for current time with interval updates (not every render)
+  const [currentTime, setCurrentTime] = useState(() => getNow());
+  
+  // Development-only render counting
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.count('🔄 CirclesClient render');
+    }
+  });
+  
+  // Update current time on interval instead of every render
+  useEffect(() => {
+    const updateTime = () => {
+      setCurrentTime(getNow());
+    };
+    
+    // Update immediately on mount
+    updateTime();
+    
+    // Then update on interval
+    const intervalId = setInterval(updateTime, UPDATE_INTERVAL);
+    
+    // Fallback: Force update every minute if tab becomes active
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        updateTime();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Cleanup
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [getNow]);
   
 
   const [timeSlots, setTimeSlots] = useState(initialTimeSlots);

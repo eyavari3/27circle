@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import FeedbackClient from './FeedbackClient';
-import { getCurrentPSTTime, createTimeSlots } from '@/lib/time';
+import { getCurrentPSTTime } from '@/lib/time';
 import { FEEDBACK_ENABLED } from '@/lib/constants';
 
 interface SearchParams {
@@ -12,7 +12,7 @@ interface SearchParams {
 export default async function FeedbackPage({
   searchParams,
 }: {
-  searchParams: SearchParams;
+  searchParams: Promise<SearchParams>;
 }) {
   const awaitedSearchParams = await searchParams;
   
@@ -33,9 +33,8 @@ export default async function FeedbackPage({
     }
   }
 
-  // Get event details - for now, we'll simulate based on time slot
+  // Get event details - for now, well simulate based on time slot
   const currentTime = getCurrentPSTTime();
-  const timeSlots = createTimeSlots();
   
   // If no specific eventId provided, determine from current time which event just ended
   let targetTimeSlot = awaitedSearchParams.timeSlot || 'Unknown';
