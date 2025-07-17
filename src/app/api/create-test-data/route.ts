@@ -19,9 +19,27 @@ export async function POST() {
 
     console.log('🚀 Creating test users for time slots:', timeSlots.map(slot => new Date(slot).toLocaleTimeString()));
 
-    const allUsers = [];
-    const allWaitlistEntries = [];
-    const allInterestEntries = [];
+    interface TestUser {
+      id: string;
+      full_name: string;
+      gender: 'male' | 'female' | 'non-binary';
+      date_of_birth: string;
+      phone_number: string;
+    }
+
+    interface WaitlistEntry {
+      user_id: string;
+      time_slot: string;
+    }
+
+    interface InterestEntry {
+      user_id: string;
+      interest_type: string;
+    }
+
+    const allUsers: TestUser[] = [];
+    const allWaitlistEntries: WaitlistEntry[] = [];
+    const allInterestEntries: InterestEntry[] = [];
 
     // Generate users for each time slot
     for (let slotIndex = 0; slotIndex < timeSlots.length; slotIndex++) {

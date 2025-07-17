@@ -65,8 +65,7 @@ export async function GET(request: NextRequest) {
     const response: MatchingApiResponse = {
       success: true,
       processedAt: pstTime.toISOString(),
-      results,
-      message: `Force matching completed - processed ${results.length} slot(s) using age+gender algorithm`
+      results
     };
     
     return NextResponse.json(response);
