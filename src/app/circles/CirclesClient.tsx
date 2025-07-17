@@ -239,7 +239,13 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
           buttonText = "Confirmed ✓";
           isDisabled = false;
           // Simulate assignedCircleId for dev
-          slot.assignedCircleId = slot.assignedCircleId || `simulated-${slot.timeSlot.time.getHours()}`;
+          if (!slot.assignedCircleId) {
+            const date = new Date(slot.timeSlot.time);
+            const dateStr = date.toISOString().split('T')[0];
+            const hour = slot.timeSlot.time.getHours();
+            const timeSlot = hour === 11 ? '11AM' : hour === 14 ? '2PM' : '5PM';
+            slot.assignedCircleId = `${dateStr}_${timeSlot}_Circle_1`;
+          }
         } else {
           buttonState = "closed";
           buttonText = `Closed at ${formatDeadlineTime(timeSlot)}`;
@@ -263,16 +269,23 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
   const handleSlotAction = async (slot: TimeSlotWithUserStatus) => {
     if (slot.buttonState === "confirmed") {
       // In development mode, use a simulated circle ID
-      const circleId = slot.assignedCircleId || `dev-circle-${slot.timeSlot.time.getHours()}`;
+      const date = new Date(slot.timeSlot.time);
+      const dateStr = date.toISOString().split('T')[0];
+      const hour = slot.timeSlot.time.getHours();
+      const timeSlot = hour === 11 ? '11AM' : hour === 14 ? '2PM' : '5PM';
+      const circleId = slot.assignedCircleId || `${dateStr}_${timeSlot}_Circle_1`;
       router.push(`/circles/${circleId}`);
       return;
     }
 
     if (slot.buttonState === "feedback") {
-      // Navigate to feedback page
-      const timeSlot = slot.timeSlot.time.getHours() === 11 ? '11AM' : 
-                      slot.timeSlot.time.getHours() === 14 ? '2PM' : '5PM';
-      router.push(`/feedback?timeSlot=${timeSlot}&eventId=dev-event-${timeSlot}`);
+      // Navigate to feedback page with actual circle ID
+      const date = new Date(slot.timeSlot.time);
+      const dateStr = date.toISOString().split('T')[0];
+      const hour = slot.timeSlot.time.getHours();
+      const timeSlot = hour === 11 ? '11AM' : hour === 14 ? '2PM' : '5PM';
+      const circleId = slot.assignedCircleId || `${dateStr}_${timeSlot}_Circle_1`;
+      router.push(`/feedback?timeSlot=${timeSlot}&eventId=${circleId}`);
       return;
     }
 

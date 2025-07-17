@@ -53,10 +53,15 @@ export default async function FeedbackPage({
   // Check if user already submitted feedback for this event
   // For now, we'll implement basic logic - this could be enhanced with actual database checks
   
+  // Generate circle ID if not provided using existing currentTime
+  const date = new Date(currentTime);
+  const dateStr = date.toISOString().split('T')[0];
+  const defaultCircleId = `${dateStr}_${targetTimeSlot}_Circle_1`;
+  
   return (
     <FeedbackClient 
       timeSlot={targetTimeSlot}
-      eventId={awaitedSearchParams.eventId || `dev-event-${targetTimeSlot}`}
+      eventId={awaitedSearchParams.eventId || defaultCircleId}
     />
   );
 }

@@ -34,46 +34,46 @@ export async function joinWaitlist(timeSlot: string): Promise<{ error: string | 
       return { error: "Failed to create user profile. Please try again." };
     }
 
-    // Validate time slot using centralized time system
-    if (!isValidTimeSlot(timeSlot)) {
-      return { error: "Invalid time slot." };
-    }
-    
-    const timeSlotDate = parseTimeSlotString(timeSlot);
-    const currentTime = getCurrentPSTTime();
-    
-    // Find the matching slot from today's slots to get the deadline
-    const todaySlots = createTimeSlots(getDisplayDate(currentTime));
-    const matchingSlot = todaySlots.find(slot => 
-      slot.time.getTime() === timeSlotDate.getTime()
-    );
-    
-    if (!matchingSlot) {
-      return { error: "Time slot not found." };
-    }
-    
-    // Check if deadline has passed
-    if (currentTime >= matchingSlot.deadline) {
-      return { error: "The deadline to join this circle has passed." };
-    }
+  // Validate time slot using centralized time system
+  if (!isValidTimeSlot(timeSlot)) {
+    return { error: "Invalid time slot." };
+  }
+  
+  const timeSlotDate = parseTimeSlotString(timeSlot);
+  const currentTime = getCurrentPSTTime();
+  
+  // Find the matching slot from today's slots to get the deadline
+  const todaySlots = createTimeSlots(getDisplayDate(currentTime));
+  const matchingSlot = todaySlots.find(slot => 
+    slot.time.getTime() === timeSlotDate.getTime()
+  );
+  
+  if (!matchingSlot) {
+    return { error: "Time slot not found." };
+  }
+  
+  // Check if deadline has passed
+  if (currentTime >= matchingSlot.deadline) {
+    return { error: "The deadline to join this circle has passed." };
+  }
 
     const { error } = await supabase
-      .from("waitlist_entries")
-      .insert({
-        user_id: user.id,
-        time_slot: timeSlot
-      });
+    .from("waitlist_entries")
+    .insert({
+      user_id: user.id,
+      time_slot: timeSlot
+    });
 
-    if (error && error.message) {
-      if (error.message.includes("duplicate key value")) {
-        return { error: null };
-      }
-      console.error("Error joining waitlist:", error.message);
-      return { error: "Could not join the waitlist. Please try again." };
+  if (error && error.message) {
+    if (error.message.includes("duplicate key value")) {
+      return { error: null };
     }
+    console.error("Error joining waitlist:", error.message);
+    return { error: "Could not join the waitlist. Please try again." };
+  }
 
-    revalidatePath("/circles");
-    return { error: null };
+  revalidatePath("/circles");
+  return { error: null };
   } catch (error) {
     console.error('Unexpected error in joinWaitlist:', error);
     return { error: "An unexpected error occurred. Please try again." };

@@ -41,7 +41,7 @@ export async function submitFeedback(data: FeedbackData) {
         .from('feedback')
         .insert({
           user_id: userId,
-          event_id: data.eventId,
+          circle_id: data.eventId,
           attendance_count: data.attendanceCount,
           did_not_attend: data.didNotAttend,
           rating: data.rating,
@@ -70,7 +70,7 @@ export async function submitFeedback(data: FeedbackData) {
       .from('feedback')
       .insert({
         user_id: userId,
-        event_id: data.eventId,
+        circle_id: data.eventId,
         attendance_count: data.attendanceCount,
         did_not_attend: data.didNotAttend,
         rating: data.rating,
@@ -111,7 +111,7 @@ export async function skipFeedback(eventId: string) {
         .from('feedback')
         .insert({
           user_id: userId,
-          event_id: eventId,
+          circle_id: eventId,
           attendance_count: 0,
           did_not_attend: true,
           rating: null,
@@ -138,7 +138,7 @@ export async function skipFeedback(eventId: string) {
       .from('feedback')
       .insert({
         user_id: userId,
-        event_id: eventId,
+        circle_id: eventId,
         attendance_count: 0,
         did_not_attend: true,
         rating: null,

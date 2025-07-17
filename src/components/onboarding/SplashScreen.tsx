@@ -93,7 +93,7 @@ export default function SplashScreen() {
           <div className="w-32 h-20 md:w-40 md:h-24 mx-auto relative">
             {/* Actual Logo */}
             <Image
-              src="/Images/PNG/logo-white-svg.svg"
+              src="/Images/PNG/white-logo.svg"
               alt="27 Circle Logo"
               width={160}
               height={96}

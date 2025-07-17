@@ -13,7 +13,7 @@ export async function saveUserInterests(interests: string[]): Promise<{ error: s
   const supabase = await createServiceClient();
   
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   // Handle unauthenticated users during onboarding
   if (!user) {
     // Return success - interests will be saved after login

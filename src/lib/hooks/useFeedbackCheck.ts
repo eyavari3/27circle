@@ -108,7 +108,12 @@ export function useFeedbackCheck(userId?: string) {
           console.log('🚀 Auto-popup triggering for feedback');
           setIsNavigating(true);
           const timeSlot = feedbackWindow.timeSlot.slot;
-          router.push(`/feedback?timeSlot=${timeSlot}&eventId=dev-event-${timeSlot}`);
+          const date = new Date(feedbackWindow.timeSlot.time);
+          const dateStr = date.toISOString().split('T')[0];
+          const hour = feedbackWindow.timeSlot.time.getHours();
+          const timeSlotStr = hour === 11 ? '11AM' : hour === 14 ? '2PM' : '5PM';
+          const circleId = `${dateStr}_${timeSlotStr}_Circle_1`;
+          router.push(`/feedback?timeSlot=${timeSlot}&eventId=${circleId}`);
         }
       } catch (e) {
         console.error('Error checking feedback requirements:', e);

@@ -1,7 +1,7 @@
-export const APP_TIME_OFFSET: number | null = 9;
+export const APP_TIME_OFFSET: number | null = 12;
 
 // Feedback Feature Toggle
-export const FEEDBACK_ENABLED: boolean = false; // Set to true to enable feedback
+export const FEEDBACK_ENABLED: boolean = true; // Enabled - feedback system is ready
 
 // Performance: Time update interval (milliseconds)
 export const UPDATE_INTERVAL: number = 10000; // 10 seconds (6x fewer re-renders than 1 second)

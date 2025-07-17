@@ -175,7 +175,7 @@ export default function LoginClient() {
         <div className="text-center mb-12">
           <div className="mb-6 flex justify-center">
             <Image
-              src="/Images/PNG/logo-black.png"
+              src="/Images/PNG/black-logo.svg"
               alt="27 Circle Logo"
               width={80}
               height={80}

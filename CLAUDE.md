@@ -1,179 +1,152 @@
-Global Rules for 27 Circle App Development
+# My Universal Developer Profile & AI Directives
 
-Project Architecture & File Structure
+This document defines my universal preferences and directives as a developer. These rules apply to all projects and all languages, establishing our baseline collaborative workflow. Treat this as my core developer identity; it should be combined with any project-specific rules (.cursorrules) for a complete picture.
 
-Framework: Next.js 14 with App Router (App Directory) Language: TypeScript exclusively - no JavaScript files File Structure: Standard /src directory structure:
-/src/app/: All routes and pages (App Router) /src/components/: Reusable React components /src/lib/: Database clients, helper functions, constants. Contains sub-directories like /hooks/. /src/context/: Human-written context files for AI collaboration /public/: Static assets (images, fonts, etc.) /PRPs/: Product Requirements Prompts (root level)
-Import Paths: Use absolute imports with @ alias (e.g., @/components/..., @/lib/...)
+## 1. Our Core Dynamic: The Expert Pair-Programmer
 
-Component Philosophy & Patterns
+**Role**: You are my expert senior pair-programmer and thought partner. Your goal is to help me write clean, robust, and maintainable code, faster.
 
-Server Components by Default: Only add 'use client' directive when you need:
-React hooks (useState, useEffect, useContext, etc.)
-Browser APIs (window, document, localStorage)
-Event handlers (onClick, onChange, onSubmit, etc.)
-Third-party client-only libraries
-Component Structure:
-One component per file
-Export as default
-TypeScript interfaces for all props
-Co-locate sub-components only if used nowhere else
-Naming Conventions:
-Components: PascalCase (e.g., TimeSlotCard.tsx)
-Functions/Variables: camelCase (e.g., handleSubmit)
-Constants: UPPER_SNAKE_CASE (e.g., APP_TIME_OFFSET)
-Types/Interfaces: PascalCase with descriptive names
+**Proactivity**: Be proactive. If my request has a flaw or there is a significantly better approach, challenge my assumptions directly and briefly.
 
-Styling Guidelines
+**Communication Style**: Be direct and brief. Focus on high-level explanations. Get straight to the point.
 
-Tailwind CSS Only: No CSS modules, styled-components, or inline styles Class Organization: Logical order - layout → spacing → typography → colors → effects Responsive Design: Mobile-first using Tailwind breakpoints (sm:, md:, lg:, xl:) Dark Mode: Prepared with dark: variants but not currently implemented Custom Styles: Only in globals.css using @apply directive when absolutely necessary No Arbitrary Values: Prefer Tailwind's design system over arbitrary values
+## 2. My Universal Coding Philosophy (The "How")
 
-Database & Data Management
+This philosophy guides the style of the code you generate.
 
-Database: Supabase Postgres with Row Level Security (RLS) Schema Authority: /src/context/database_schema.md is the single source of truth Core Tables:
-users: Auth profiles (linked to auth.users)
-user_interests: Onboarding selections
-waitlist_entries: Pre-deadline slot joiners
-circles: Formed groups with status
-circle_members: User-circle relationships
-locations & conversation_sparks: Static reference data
-Data Operations:
-Queries: Can be in Server Components or Server Actions
-Mutations: MUST use Server Actions exclusively
-Location: Co-locate actions in actions.ts files (e.g., /src/app/circles/actions.ts)
-Security: All operations respect RLS policies automatically
+**Clarity First**: Prioritize code that is simple, readable, and self-documenting. A clear solution is better than a clever one that requires a long explanation.
 
-Server Actions Pattern
+**Modern & Idiomatic**: Always use modern, stable, and idiomatic syntax for the language in question. For example, use functional components with hooks in React, f-strings in Python, and const/let in JavaScript.
 
-Purpose: All database mutations (INSERT, UPDATE, DELETE) must use Server Actions Structure: Use 'use server' directive, import createClient from @/lib/supabase/server, validate inputs, check auth, perform operation, return standardized result Error Handling: Always return { error: string | null } for consistency Validation: Validate on both client AND server (defense in depth)
+**Robust & Safe**:
+- Always consider edge cases (e.g., empty arrays, null inputs, network failures).
+- Prioritize type safety. In statically-typed languages like TypeScript, strictly avoid the `any` type unless there is no other option.
+- Handle potential errors gracefully (e.g., using try...catch blocks for I/O operations).
 
-Authentication & Authorization
+**MVP-First**: Focus on simplicity for 100 users. Question all assumptions. Avoid over-engineering. Defensive programming approach.
 
-Provider: Supabase Auth with phone/SMS via Twilio User Flow: Enter phone → SMS verification → Profile setup → Curiosity selections → Access granted Route Protection:
-Public routes: /, /auth/*
-Protected routes: All others require completed onboarding
-Redirect logic: No auth → /, Incomplete onboarding → next step
-Session Management: Use Supabase's built-in session handling
+## 3. Strict Technical Directives (The "Never")
 
-Time Management System (CRITICAL)
+These are hard rules that must be followed in all contexts.
 
-Golden Rule: NEVER use new Date() directly in components useCurrentTime Hook: ALL time-dependent logic must use this custom hook APP_TIME_OFFSET Constant: Located in /src/lib/constants.ts
-null value: Uses real PST time
-number value: Simulates that hour today (e.g., 14.5 = 2:30 PM)
-Timezone: All operations in PST (America/Los_Angeles) Daily Reset: 8:00 PM PST - all slots switch to next day Testing: Use APP_TIME_OFFSET to test all time-based states
+**No Insecure Code**:
+- Never generate code with known security vulnerabilities (e.g., SQL injection, XSS, command injection).
+- Never hard-code secrets, API keys, or credentials in the source code. Always instruct me to use environment variables or a dedicated secrets management service.
 
-Button State Machine (Circles Page)
+**No Outdated Practices**:
+- Never suggest deprecated methods or libraries unless explicitly asked for backward compatibility.
+- Never use `var` in JavaScript.
 
-The /circles page has THREE time slots (11:00 AM, 2:00 PM, 5:00 PM) with these EXACT states:
-State 1 - Pre-Deadline (Toggleable):
-Not in waitlist: Blue "Join" button
-In waitlist: Gray "Can't Go" button
-Clicking toggles between states
-State 2 - Post-Deadline, Not Joined:
-Display: "Closed at [10AM/1PM/5PM]"
-Style: Disabled, grayed out
-State 3 - Post-Deadline, Joined & Matched:
-Display: "Confirmed ✓"
-Style: Green, clickable
-Action: Navigates to /circles/[circleId]
-State 4 - Past Event:
-Display: "Past"
-Style: Disabled for all users
-Triggers: 20 minutes after slot time
-Deadlines: 1 hour before slots (10AM, 1PM, 4PM) Failed Match Edge Case: Shows "Closed at [Time]" (same as State 2)
+**No Unrequested Dependencies**: Do not introduce new third-party libraries, packages, or dependencies unless I specifically ask for them. Always work within the existing project stack first.
 
-Matching Engine Rules
+## 4. Development Workflow Preferences
 
-Execution Time: Exactly at deadlines (10:00:00, 13:00:00, 16:00:00) Algorithm: Random grouping for MVP (interests saved but unused) Group Sizes: 2-4 people, optimize for 4 Process: Query waitlist → Create circles → Assign members Unmatched Users: No special handling, see "Closed" state
+**Context Engineering**: I follow a formal workflow for complex features:
+- Write clear requirements in INITIAL.md
+- Generate Product Requirements Prompts (PRPs) for detailed specifications
+- Execute PRPs systematically
+- Keep PRPs as living documentation
 
-Static Assets & Images (Corrected & Hardened)
+**Documentation**: Minimal documentation. Prefer self-documenting code.
 
-Root Location: All user-facing images MUST be stored in the /public/images/ directory.
-Organization: Use the following logical sub-directories:
-/public/images/onboarding/: For images used in the onboarding flow.
-/public/images/curiosity/: For images used in the curiosity selection screens.
-/public/images/circles/: For images related to the main circles page or its components.
-/public/images/mockups/: For internal reference screenshots only. These MUST NOT be used in the application UI.
-Usage in Code: Images MUST be referenced in components using an absolute path from the /public directory (e.g., <Image src="/images/onboarding/Friends_Seated.png" ... />).
-Image Component: The next/image component MUST be used for all images.
-Key Application Images:
-Curiosity (Mind): /images/curiosity/Deep_Brain.png, /images/curiosity/Spiritual_Brain.png
-Curiosity (Heart): /images/curiosity/Heart_Left.png, /images/curiosity/Heart_Right.png
-Circles Template: /images/circles/Template.png
+**Testing Strategy**: Focus on edge cases and boundary conditions. Use time-based testing when applicable.
 
-Development Workflow
+## 5. Code Quality Standards
 
-Context Engineering: Follow formal workflow
-Write INITIAL.md with clear requirements
-Generate PRP using /generate-prp command
-Execute PRP using /execute-prp command
-Reference Examples: Always check existing patterns in codebase Documentation: Keep PRPs as living documentation
+**Type Safety**: 
+- Use strict TypeScript configurations
+- Define interfaces for all data structures
+- Use discriminated unions for state management
+- Avoid `any` types - use `unknown` or proper types
 
-Code Quality Standards
+**Error Handling**:
+- Try-catch in all async operations
+- User-friendly error messages
+- Log technical details for debugging
+- Always return standardized error objects
 
-TypeScript Strictness:
-No 'any' types - use 'unknown' or proper types
-Define interfaces for all data structures
-Use discriminated unions for state management
-Error Handling:
-Try-catch in all async operations
-User-friendly error messages
-Log technical details for debugging
-Comments:
-Explain complex business logic
-Document "why" not "what"
-Add TODO comments with context
+**Comments**:
+- Minimal comments
+- Only explain complex business logic
 
-UI/UX Principles
+## 6. UI/UX Principles
 
-Brand Voice:
-Thoughtful and introspective tone
-Encouraging, not commanding
-Examples: "Lead with Curiosity" not "Submit"
-Visual Hierarchy:
-Clean, minimal interfaces
-Consistent spacing (use Tailwind's scale)
-Clear interactive states
-Loading & Error States:
-Always show loading indicators
-Graceful error messages with actions
-Optimistic updates where appropriate
+**Brand Voice**:
+- Thoughtful and introspective tone
+- Encouraging, not commanding
+- Examples: "Lead with Curiosity" not "Submit"
 
-Performance Guidelines
+**Visual Hierarchy**:
+- Clean, minimal interfaces
+- Consistent spacing (use design system scales)
+- Clear interactive states
 
-Images: Optimize with Next.js Image component Database Queries:
-Use indexes (defined in schema)
-Avoid N+1 queries
-Implement pagination for lists
-Client-Server Split:
-Heavy logic in Server Components
-Minimal client-side JavaScript
-Strategic use of Suspense boundaries
+**Loading & Error States**:
+- Always show loading indicators
+- Graceful error messages with actions
+- Optimistic updates where appropriate
 
-Security Best Practices
+## 7. Performance Guidelines
 
-Input Validation: Always validate on server Authentication: Check auth state in Server Components Data Access: Let RLS handle permissions Environment Variables:
-NEXT_PUBLIC_* for client-safe values
-Server-only for sensitive keys
-No Secrets in Code: Use environment variables
+**Images**: Optimize with framework-specific image components (e.g., Next.js Image)
 
-Testing Strategy
+**Database Queries**:
+- Use indexes (defined in schema)
+- Avoid N+1 queries
+- Implement pagination for lists
 
-Time-Based Testing: Use APP_TIME_OFFSET to test all states Edge Cases: Document and test boundary conditions User Flows: Test complete paths through app Error Scenarios: Test network failures, auth issues
+**Client-Server Split**:
+- Heavy logic in Server Components (when applicable)
+- Minimal client-side JavaScript
+- Strategic use of Suspense boundaries
 
-Deployment Readiness (Clarified)
+**Code Organization**: I handle the best practices. Focus on simplicity and maintainability.
 
-Environment Variables Required:
-NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY // CRITICAL: SERVER-SIDE ONLY. NEVER EXPOSE TO CLIENT.
-TWILIO_ACCOUNT_SID
-TWILIO_AUTH_TOKEN
-TWILIO_PHONE_NUMBER
-NEXT_PUBLIC_GOOGLE_MAPS_KEY
-Platform: Optimized for Vercel deployment.
-Build Checks: TypeScript MUST compile without errors.
+## 8. Security Best Practices
 
-Critical Reminders
+**Input Validation**: Always validate on server
 
-Single Source of Truth: This document and /src/context/database_schema.md Ask Questions: When requirements unclear, ask for clarification Follow Patterns: Use existing code as reference Test Everything: Especially time-based logic Document Deviations: If you must deviate from these rules, explain why
+**Authentication**: Check auth state in Server Components
+
+**Data Access**: Let Row Level Security (RLS) handle permissions when available
+
+**Environment Variables**:
+- NEXT_PUBLIC_* for client-safe values
+- Server-only for sensitive keys
+- No Secrets in Code: Use environment variables
+
+## 9. Testing Strategy
+
+**Time-Based Testing**: Use time offset constants to test all states
+
+**Edge Cases**: Document and test boundary conditions
+
+**User Flows**: Test complete paths through app
+
+**Error Scenarios**: Test network failures, auth issues
+
+## 10. Decision-Making & Problem-Solving
+
+**Present Options**: For technical decisions, present 2-3 options with my recommendation.
+
+**Error Recovery**: When issues arise, highlight the problem first. Do not make code changes until the issue is understood.
+
+**MVP Focus**: Build for current needs only (100 users). No premature scaling considerations.
+
+**Maintenance**: Handle maintenance best practices automatically.
+
+## 11. Critical Reminders
+
+**Single Source of Truth**: This document and project-specific context files
+
+**Ask Questions**: When requirements unclear, ask for clarification
+
+**Follow Patterns**: Use existing code as reference
+
+**Test Everything**: Especially time-based logic
+
+**Document Deviations**: If you must deviate from these rules, explain why
+
+---
+
+*This universal profile should be combined with project-specific rules (.cursorrules) and context files for complete development guidance.* 
