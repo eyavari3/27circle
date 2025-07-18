@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { submitFeedback, skipFeedback } from './actions';
+import { typography } from '@/lib/typography';
 
 interface FeedbackClientProps {
   timeSlot: string;
@@ -165,7 +166,7 @@ export default function FeedbackClient({ timeSlot, eventId }: FeedbackClientProp
 
       {/* Title */}
       <div className="text-center text-white px-6 mb-8">
-        <h1 className="text-2xl font-medium">
+        <h1 className={`${typography.page.header}`}>
           How did the {timeSlot}
           <br />
           Circle Go?
@@ -177,7 +178,7 @@ export default function FeedbackClient({ timeSlot, eventId }: FeedbackClientProp
         <div className="max-w-md mx-auto space-y-6">
           {/* Attendance Count */}
           <div>
-            <label className="block text-gray-700 font-medium mb-3">
+            <label className={`block text-gray-700 ${typography.section.label} mb-3`}>
               How many people were in your Circle?*
             </label>
             <div className="relative">
@@ -203,11 +204,11 @@ export default function FeedbackClient({ timeSlot, eventId }: FeedbackClientProp
           {/* Rating - only show if they attended */}
           {!didNotAttend && (
             <div>
-              <label className="block text-gray-700 font-medium mb-3">
+              <label className={`block text-gray-700 ${typography.section.label} mb-3`}>
                 How would you rate your experience?*
               </label>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-500">Not good</span>
+                <span className={`${typography.component.small} text-gray-500`}>Not good</span>
                 <div className="flex space-x-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
@@ -223,7 +224,7 @@ export default function FeedbackClient({ timeSlot, eventId }: FeedbackClientProp
                     </button>
                   ))}
                 </div>
-                <span className="text-sm text-gray-500">Excellent</span>
+                <span className={`${typography.component.small} text-gray-500`}>Excellent</span>
               </div>
             </div>
           )}
@@ -231,7 +232,7 @@ export default function FeedbackClient({ timeSlot, eventId }: FeedbackClientProp
           {/* Memorable Moment - only show if they attended */}
           {!didNotAttend && (
             <div>
-              <label className="block text-gray-700 font-medium mb-3">
+              <label className={`block text-gray-700 ${typography.section.label} mb-3`}>
                 What&apos;s one thing you&apos;ll remember?
               </label>
               <textarea
@@ -259,7 +260,7 @@ export default function FeedbackClient({ timeSlot, eventId }: FeedbackClientProp
           <button
             onClick={handleSubmit}
             disabled={!isFormValid || isSubmitting}
-            className={`w-full py-4 rounded-full font-medium text-white transition-all ${
+            className={`w-full py-4 rounded-full ${typography.component.button} text-white transition-all ${
               isFormValid && !isSubmitting
                 ? 'bg-blue-600 hover:bg-blue-700 shadow-lg'
                 : 'bg-gray-300 cursor-not-allowed'
@@ -272,7 +273,7 @@ export default function FeedbackClient({ timeSlot, eventId }: FeedbackClientProp
           <button
             onClick={handleSkip}
             disabled={isSubmitting}
-            className={`w-full py-3 rounded-full font-medium transition-all ${
+            className={`w-full py-3 rounded-full ${typography.component.button} transition-all ${
               !isSubmitting
                 ? 'text-gray-600 hover:text-gray-800'
                 : 'text-gray-400 cursor-not-allowed'

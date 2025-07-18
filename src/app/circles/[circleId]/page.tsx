@@ -6,6 +6,7 @@ import { getCircleLocation } from "@/app/circles/location-actions";
 import { getMapUrl, getNavigationUrl } from "@/lib/maps";
 import { Location } from "@/lib/types";
 import Image from "next/image";
+import { typography } from "@/lib/typography";
 
 export default function UpcomingCirclePage() {
   const params = useParams();
@@ -86,8 +87,8 @@ export default function UpcomingCirclePage() {
         </div>
         
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-2">Upcoming Circle</h1>
-          <p className="text-gray-300 text-base">{circleData.timeSlot}</p>
+          <h1 className={`${typography.page.header} mb-2`}>Upcoming Circle</h1>
+          <p className={`${typography.component.body} text-gray-300`}>{circleData.timeSlot}</p>
         </div>
       </div>
 
@@ -102,8 +103,8 @@ export default function UpcomingCirclePage() {
               </svg>
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Spark:</h3>
-              <p className="text-gray-700 text-base">{circleData.spark}</p>
+              <h3 className={`${typography.section.title} text-gray-900 mb-2`}>Spark:</h3>
+              <p className={`${typography.component.body} text-gray-700`}>{circleData.spark}</p>
             </div>
           </div>
         </div>
@@ -118,19 +119,19 @@ export default function UpcomingCirclePage() {
               </svg>
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">{circleData.location}</h3>
+              <h3 className={`${typography.section.title} text-gray-900`}>{circleData.location}</h3>
               {location ? (
                 <button 
                   onClick={() => {
                     const navUrl = getNavigationUrl(location);
                     window.open(navUrl, '_blank');
                   }}
-                  className="text-sm text-blue-600 underline mt-1 hover:text-blue-800 transition-colors"
+                  className={`${typography.component.small} text-blue-600 underline mt-1 hover:text-blue-800 transition-colors`}
                 >
                   View the exact spot
                 </button>
               ) : (
-                <span className="text-sm text-gray-400 mt-1">
+                <span className={`${typography.component.small} text-gray-400 mt-1`}>
                   Loading location...
                 </span>
               )}

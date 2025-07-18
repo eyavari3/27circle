@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { formatPhoneForDisplay } from '@/lib/utils/phoneFormatter';
 import { createClient } from '@/lib/supabase/client';
 import { isTestPhoneNumber, isTestModeEnabled, validateTestOTP } from '@/lib/auth/test-user-utils';
+import { typography } from '@/lib/typography';
 
 export default function VerifyClient() {
   const router = useRouter();
@@ -154,11 +155,11 @@ export default function VerifyClient() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-3">
-            Verify Your Phone
+          <h1 className={`${typography.page.title} text-gray-900 mb-3`}>
+            Check your SMS
           </h1>
-          <p className="text-gray-600">
-            We sent a verification code to{' '}
+          <p className={`${typography.component.small} text-gray-600`}>
+            Verification code sent to{' '}
             <span className="font-medium">{formatPhoneForDisplay(phoneNumber)}</span>
           </p>
         </div>
@@ -166,15 +167,15 @@ export default function VerifyClient() {
         {/* Verification Form */}
         <form onSubmit={handleVerifyCode} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className={`block ${typography.section.label} text-gray-700 mb-2`}>
               Verification Code
             </label>
             <input
               type="text"
               value={verificationCode}
               onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="Enter 6-digit code"
-              className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-lg tracking-widest"
+              placeholder="Enter 6-digit Code"
+              className={`w-full px-4 py-3 bg-gray-100 border-0 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center ${typography.component.input} tracking-widest`}
               disabled={isLoading}
               maxLength={6}
             />
@@ -189,25 +190,18 @@ export default function VerifyClient() {
           <button
             type="submit"
             disabled={isLoading || verificationCode.length !== 6}
-            className="w-full py-4 px-6 text-white font-semibold rounded-full transition-all duration-200 disabled:opacity-50"
+            className={`w-full py-4 px-6 text-white ${typography.component.button} rounded-full transition-all duration-200 disabled:opacity-50`}
             style={{ backgroundColor: '#0E2C54' }}
           >
             {isLoading ? 'Verifying...' : 'Verify Code'}
           </button>
         </form>
 
-        {/* Resend Code */}
+        {/* Helper Text */}
         <div className="text-center mt-6">
-          <p className="text-gray-600 text-sm mb-2">
-            Didn't receive the code?
+          <p className={`${typography.component.small} text-gray-600`}>
+            Enter the code to sign in.
           </p>
-          <button
-            onClick={handleResendCode}
-            disabled={isLoading}
-            className="text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors disabled:opacity-50"
-          >
-            Resend Code
-          </button>
         </div>
       </div>
     </div>
