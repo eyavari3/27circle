@@ -98,56 +98,77 @@ export function useFeedbackCheck(userId?: string) {
           filteredOut: waitlistEvents.length - validTodayEvents.length
         });
         
-        // Check if user was on waitlist for THIS day's event
-        const wasOnWaitlist = validTodayEvents.includes(eventTime);
+        // MVP Fix: Check if user joined ANY event currently in feedback window
+        // Instead of only checking the chronologically first feedback window
+        let matchedEvent: string | null = null;
+        let matchedTimeSlot: string | null = null;
         
-        console.log('🎪 Event matching check:', {
-          eventTimeBeingChecked: eventTime,
+        for (const joinedEventTime of validTodayEvents) {
+          const joinedEventDate = new Date(joinedEventTime);
+          const eventEndTime = new Date(joinedEventDate);
+          eventEndTime.setMinutes(eventEndTime.getMinutes() + 20); // Event lasts 20 minutes
+          
+          // Check if this joined event is currently in its feedback window
+          if (currentTime >= eventEndTime) {
+            // Extract time slot from joined event
+            const joinedHour = joinedEventDate.getHours();
+            const joinedSlot = joinedHour === 11 ? '11AM' : joinedHour === 14 ? '2PM' : '5PM';
+            
+            matchedEvent = joinedEventTime;
+            matchedTimeSlot = joinedSlot;
+            break; // Use first match (earliest event) to avoid multiple redirects
+          }
+        }
+        
+        console.log('🎪 Multi-event feedback check:', {
           validTodayEvents,
-          wasOnWaitlist,
-          exactMatch: validTodayEvents.find(e => e === eventTime)
+          currentTime: currentTime.toLocaleTimeString(),
+          matchedEvent,
+          matchedTimeSlot,
+          originalFeedbackWindow: feedbackWindow.timeSlot.slot
         });
         
-        if (!wasOnWaitlist) {
-          console.log('❌ User was not on waitlist for this event');
+        if (!matchedEvent || !matchedTimeSlot) {
+          console.log('❌ User not on waitlist for any event currently in feedback window');
           return;
         }
         
-        console.log('✅ User WAS on waitlist - proceeding with feedback check');
+        console.log('✅ User joined event in feedback window - proceeding with feedback check');
 
-        // Check if feedback already submitted or skipped using centralized key system
-        const feedbackRecord = getFeedbackRecord(userId, feedbackWindow.timeSlot.slot, feedbackWindow.timeSlot.time);
+        // Check if feedback already submitted for the matched event
+        const matchedEventDate = new Date(matchedEvent);
+        const feedbackRecord = getFeedbackRecord(userId, matchedTimeSlot, matchedEventDate);
         
         if (feedbackRecord) {
           // If feedback was submitted or skipped, don't show popup
           if (feedbackRecord.status === 'submitted' || feedbackRecord.status === 'skipped') {
+            console.log('✅ Feedback already submitted/skipped for matched event');
             return;
           }
         }
 
-        // Check if auto-popup should trigger (60 mins after event start)
-        const eventStartTime = feedbackWindow.timeSlot.time;
+        // Check if auto-popup should trigger (60 mins after matched event start)
+        const eventStartTime = matchedEventDate;
         const autoPopupTime = new Date(eventStartTime);
         autoPopupTime.setMinutes(autoPopupTime.getMinutes() + 60); // 60 minutes after start
         
         const shouldAutoPopup = currentTime >= autoPopupTime;
         
-        console.log('🎯 Feedback Auto-Popup Check:', {
-          eventStart: eventStartTime.toLocaleTimeString(),
+        console.log('🎯 Feedback Auto-Popup Check (matched event):', {
+          matchedEventStart: eventStartTime.toLocaleTimeString(),
           autoPopupTime: autoPopupTime.toLocaleTimeString(),
           currentTime: currentTime.toLocaleTimeString(),
           shouldAutoPopup,
           isNavigating,
-          timeSlot: feedbackWindow.timeSlot.slot
+          matchedTimeSlot
         });
         
         // Auto-popup if time has come and not already navigating
         if (shouldAutoPopup && !isNavigating) {
-          console.log('🚀 Auto-popup triggering for feedback');
+          console.log('🚀 Auto-popup triggering for matched event feedback');
           setIsNavigating(true);
-          const timeSlot = feedbackWindow.timeSlot.slot;
-          const eventId = generateEventId(timeSlot, feedbackWindow.timeSlot.time);
-          router.push(`/feedback?timeSlot=${timeSlot}&eventId=${eventId}`);
+          const eventId = generateEventId(matchedTimeSlot, matchedEventDate);
+          router.push(`/feedback?timeSlot=${matchedTimeSlot}&eventId=${eventId}`);
         }
       } catch (e) {
         console.error('Error checking feedback requirements:', e);
