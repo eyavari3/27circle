@@ -84,11 +84,36 @@ export function useFeedbackCheck(userId?: string) {
         const waitlistEvents = JSON.parse(devWaitlist) as string[];
         const eventTime = feedbackWindow.timeSlot.time.toISOString();
         
-        // Check if user was on waitlist for this event
-        const wasOnWaitlist = waitlistEvents.includes(eventTime);
+        // CRITICAL: Filter out stale waitlist data from previous days
+        const todayDate = feedbackWindow.timeSlot.time.toISOString().split('T')[0]; // YYYY-MM-DD
+        const validTodayEvents = waitlistEvents.filter(eventISOString => {
+          const eventDate = eventISOString.split('T')[0];
+          return eventDate === todayDate;
+        });
+        
+        console.log('🗓️ Waitlist date filtering:', {
+          todayDate,
+          allWaitlistEvents: waitlistEvents,
+          validTodayEvents,
+          filteredOut: waitlistEvents.length - validTodayEvents.length
+        });
+        
+        // Check if user was on waitlist for THIS day's event
+        const wasOnWaitlist = validTodayEvents.includes(eventTime);
+        
+        console.log('🎪 Event matching check:', {
+          eventTimeBeingChecked: eventTime,
+          validTodayEvents,
+          wasOnWaitlist,
+          exactMatch: validTodayEvents.find(e => e === eventTime)
+        });
+        
         if (!wasOnWaitlist) {
+          console.log('❌ User was not on waitlist for this event');
           return;
         }
+        
+        console.log('✅ User WAS on waitlist - proceeding with feedback check');
 
         // Check if feedback already submitted or skipped using centralized key system
         const feedbackRecord = getFeedbackRecord(userId, feedbackWindow.timeSlot.slot, feedbackWindow.timeSlot.time);
