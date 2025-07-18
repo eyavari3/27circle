@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
+import { typography } from "@/lib/typography";
 
 export default function SplashScreen() {
   const [animate, setAnimate] = useState(false);
@@ -66,9 +67,9 @@ export default function SplashScreen() {
       aria-busy={!settled}
     >
       <div className="flex-1 flex flex-col justify-center text-center px-4 relative z-10 max-w-lg mx-auto pt-[10vh] pb-[8vh]">
-        {/* "27 Circle" Title - PRP: Page headers should be 1.875rem (30px) */}
+        {/* "27 Circle" Title - Hero level typography to match mockup */}
         <h1 
-          className="text-[1.375rem] font-bold tracking-wide mb-4 transition-all duration-1000 delay-500"
+          className={`${typography.hero.title} mb-4 transition-all duration-1000 delay-500`}
           style={{
             opacity: animate ? 1 : 0,
             transform: animate ? 'scale(1)' : 'scale(0.9)',
@@ -127,9 +128,9 @@ export default function SplashScreen() {
           </div>
         </div>
         
-        {/* "Be Curious Together" Tagline - PRP: Body text should be 1rem (16px) */}
+        {/* "Be Curious Together" Tagline - Page level typography to match mockup */}
         <p 
-          className="text-[1rem] font-medium tracking-wide mb-4 transition-all duration-1000 delay-[1500ms]"
+          className={`${typography.page.subtitle} tracking-wide mb-4 transition-all duration-1000 delay-[1500ms]`}
           style={{
             opacity: animate ? 1 : 0,
             filter: animate ? 'blur(0)' : 'blur(8px)',
@@ -140,9 +141,9 @@ export default function SplashScreen() {
           Be Curious Together
         </p>
         
-        {/* Subtext - PRP: Caption text should be 0.875rem (14px) */}
+        {/* Subtext - Component level caption text */}
         <p 
-          className="text-[0.875rem] font-normal tracking-wide transition-all duration-1000 delay-[1800ms]"
+          className={`${typography.component.small} tracking-wide transition-all duration-1000 delay-[1800ms]`}
           style={{
             opacity: animate ? 0.8 : 0,
             transform: animate ? 'translateY(0)' : 'translateY(0.5rem)',
