@@ -1,0 +1,168 @@
+{
+  "timestamp": "2025-07-18T00:30:37.320Z",
+  "schema_discovery": {
+    "tables": {
+      "users": {
+        "exists": true,
+        "error": null,
+        "row_count": 14
+      },
+      "circles": {
+        "exists": true,
+        "error": null,
+        "row_count": 2
+      },
+      "circle_members": {
+        "exists": true,
+        "error": null,
+        "row_count": 5
+      },
+      "waitlist_entries": {
+        "exists": true,
+        "error": null,
+        "row_count": 18
+      },
+      "user_interests": {
+        "exists": true,
+        "error": null,
+        "row_count": 12
+      },
+      "locations": {
+        "exists": true,
+        "error": null,
+        "row_count": 10
+      },
+      "conversation_sparks": {
+        "exists": true,
+        "error": null,
+        "row_count": 10
+      },
+      "daily_events": {
+        "exists": false,
+        "error": "",
+        "row_count": 0
+      },
+      "joins": {
+        "exists": false,
+        "error": "",
+        "row_count": 0
+      },
+      "sparks": {
+        "exists": false,
+        "error": "",
+        "row_count": 0
+      }
+    }
+  },
+  "code_references": {
+    "tables": [
+      "buttons",
+      "circle_members",
+      "circles",
+      "conversation_sparks",
+      "feedback",
+      "information_schema",
+      "locations",
+      "one",
+      "patterns",
+      "query",
+      "same",
+      "sparks",
+      "table_name",
+      "the",
+      "this",
+      "user_interests",
+      "users",
+      "waitlist",
+      "waitlist_entries"
+    ],
+    "columns": [
+      "circle_id",
+      "circle_members(\n",
+      "circle_members(user_id)",
+      "circles!inner(\n",
+      "conversation_spark_id",
+      "conversation_sparks(spark_text)",
+      "conversation_sparks(spark_text)\n",
+      "created_at",
+      "created_at\n",
+      "date_of_birth",
+      "date_of_birth\n",
+      "full_name",
+      "gender",
+      "gender)",
+      "gender)\n",
+      "id",
+      "interest_type",
+      "is_test",
+      "location_id",
+      "locations(name)",
+      "phone_number",
+      "spark_text",
+      "status",
+      "time_slot",
+      "user_id",
+      "user_interests",
+      "user_interests(interest_type)",
+      "user_interests(interest_type)\n",
+      "user_interests(interest_type))",
+      "users!inner(\n",
+      "users!inner(full_name",
+      "users(\n",
+      "users(full_name"
+    ]
+  },
+  "analysis": {
+    "existing_tables": [
+      "users",
+      "circles",
+      "circle_members",
+      "waitlist_entries",
+      "user_interests",
+      "locations",
+      "conversation_sparks"
+    ],
+    "non_existent_tables": [
+      "daily_events",
+      "joins",
+      "sparks"
+    ],
+    "empty_tables": [],
+    "unreferenced_in_code": [],
+    "working_tables": [
+      "users",
+      "circles",
+      "circle_members",
+      "waitlist_entries",
+      "user_interests",
+      "locations",
+      "conversation_sparks"
+    ]
+  },
+  "cleanup_recommendations": [
+    {
+      "type": "INFO",
+      "action": "ALREADY_REMOVED",
+      "target": "daily_events",
+      "reason": "Table does not exist - already cleaned up or never created",
+      "sql": null,
+      "risk": "NONE"
+    },
+    {
+      "type": "INFO",
+      "action": "ALREADY_REMOVED",
+      "target": "joins",
+      "reason": "Table does not exist - already cleaned up or never created",
+      "sql": null,
+      "risk": "NONE"
+    },
+    {
+      "type": "INFO",
+      "action": "ALREADY_REMOVED",
+      "target": "sparks",
+      "reason": "Table does not exist - already cleaned up or never created",
+      "sql": null,
+      "risk": "NONE"
+    }
+  ]
+}

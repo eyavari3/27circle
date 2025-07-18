@@ -1,0 +1,132 @@
+{
+  "timestamp": "2025-07-18T00:31:37.851Z",
+  "summary": {
+    "total_tables": 7,
+    "total_columns": 29,
+    "used_columns": 26,
+    "potentially_unused_columns": 3,
+    "schema_health_percentage": 90
+  },
+  "table_analysis": {
+    "users": {
+      "total_columns": 5,
+      "all_columns": [
+        "id",
+        "full_name",
+        "gender",
+        "date_of_birth",
+        "phone_number"
+      ],
+      "used_in_code": [
+        "id",
+        "full_name",
+        "gender",
+        "date_of_birth",
+        "phone_number"
+      ],
+      "potentially_unused": []
+    },
+    "circles": {
+      "total_columns": 7,
+      "all_columns": [
+        "id",
+        "time_slot",
+        "location_id",
+        "conversation_spark_id",
+        "status",
+        "max_participants",
+        "created_at"
+      ],
+      "used_in_code": [
+        "id",
+        "time_slot",
+        "location_id",
+        "conversation_spark_id",
+        "status",
+        "created_at"
+      ],
+      "potentially_unused": [
+        "max_participants"
+      ]
+    },
+    "circle_members": {
+      "total_columns": 4,
+      "all_columns": [
+        "id",
+        "circle_id",
+        "user_id",
+        "created_at"
+      ],
+      "used_in_code": [
+        "id",
+        "circle_id",
+        "user_id",
+        "created_at"
+      ],
+      "potentially_unused": []
+    },
+    "waitlist_entries": {
+      "total_columns": 4,
+      "all_columns": [
+        "id",
+        "user_id",
+        "time_slot",
+        "created_at"
+      ],
+      "used_in_code": [
+        "id",
+        "user_id",
+        "time_slot",
+        "created_at"
+      ],
+      "potentially_unused": []
+    },
+    "user_interests": {
+      "total_columns": 2,
+      "all_columns": [
+        "user_id",
+        "interest_type"
+      ],
+      "used_in_code": [
+        "user_id",
+        "interest_type"
+      ],
+      "potentially_unused": []
+    },
+    "locations": {
+      "total_columns": 5,
+      "all_columns": [
+        "id",
+        "name",
+        "latitude",
+        "longitude",
+        "created_at"
+      ],
+      "used_in_code": [
+        "id",
+        "name",
+        "created_at"
+      ],
+      "potentially_unused": [
+        "latitude",
+        "longitude"
+      ]
+    },
+    "conversation_sparks": {
+      "total_columns": 2,
+      "all_columns": [
+        "id",
+        "spark_text"
+      ],
+      "used_in_code": [
+        "id",
+        "spark_text"
+      ],
+      "potentially_unused": []
+    }
+  },
+  "issues": [],
+  "recommendations": [
+    "Schema is clean - no cleanup needed"
+  ]
+}
