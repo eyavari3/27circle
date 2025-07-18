@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { submitFeedback, skipFeedback } from './actions';
 import { typography } from '@/lib/typography';
+import { generateFeedbackKey, saveFeedbackRecord } from '@/lib/feedback-keys';
 
 interface FeedbackClientProps {
   timeSlot: string;
@@ -53,8 +54,11 @@ export default function FeedbackClient({ timeSlot, eventId }: FeedbackClientProp
       memorableMoment: memorableMoment.trim() || undefined,
     };
 
-    // Save to localStorage immediately (instant UI feedback)
-    const savedToLocal = saveFeedbackToLocalStorage(eventId, feedbackData);
+    // Save to localStorage immediately (instant UI feedback) using centralized system
+    const savedToLocal = saveFeedbackRecord('dev-user-id', eventId, {
+      ...feedbackData,
+      status: 'submitted'
+    });
     
     if (!savedToLocal) {
       setError('Failed to save feedback locally');
@@ -78,8 +82,10 @@ export default function FeedbackClient({ timeSlot, eventId }: FeedbackClientProp
     setIsSubmitting(true);
     setError('');
 
-    // Save skip status to localStorage immediately (instant UI feedback)
-    const savedToLocal = saveSkipToLocalStorage(eventId);
+    // Save skip status to localStorage immediately (instant UI feedback) using centralized system
+    const savedToLocal = saveFeedbackRecord('dev-user-id', eventId, {
+      status: 'skipped'
+    });
     
     if (!savedToLocal) {
       setError('Failed to save skip status locally');
@@ -99,46 +105,7 @@ export default function FeedbackClient({ timeSlot, eventId }: FeedbackClientProp
     }
   };
 
-  // Client-side localStorage functions (fix for server action localStorage bug)
-  const saveFeedbackToLocalStorage = (eventId: string, data: any) => {
-    const feedbackKey = `feedback-dev-user-${eventId}`;
-    const record = {
-      userId: 'dev-user-id',
-      eventId: eventId,
-      attendanceCount: data.attendanceCount,
-      didNotAttend: data.didNotAttend,
-      rating: data.rating,
-      memorableMoment: data.memorableMoment,
-      submittedAt: new Date().toISOString(),
-      status: 'submitted' as const,
-    };
-    
-    try {
-      localStorage.setItem(feedbackKey, JSON.stringify(record));
-      return true;
-    } catch (e) {
-      console.error('Error saving feedback to localStorage:', e);
-      return false;
-    }
-  };
-
-  const saveSkipToLocalStorage = (eventId: string) => {
-    const feedbackKey = `feedback-dev-user-${eventId}`;
-    const record = {
-      userId: 'dev-user-id',
-      eventId: eventId,
-      skippedAt: new Date().toISOString(),
-      status: 'skipped' as const,
-    };
-    
-    try {
-      localStorage.setItem(feedbackKey, JSON.stringify(record));
-      return true;
-    } catch (e) {
-      console.error('Error saving skip status to localStorage:', e);
-      return false;
-    }
-  };
+  // Note: localStorage functions now handled by centralized feedback-keys utility
 
   const isFormValid = didNotAttend || (attendanceCount !== null && rating !== null);
 

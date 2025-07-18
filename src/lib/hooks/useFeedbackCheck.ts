@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useCurrentTime } from './useCurrentTime';
 import { getCurrentFeedbackWindow } from '../time';
 import { FEEDBACK_ENABLED, UPDATE_INTERVAL } from '../constants';
+import { getFeedbackRecord, generateEventId } from '../feedback-keys';
 
 /**
  * Hook to check if user needs to provide feedback and redirect if necessary
@@ -71,19 +72,13 @@ export function useFeedbackCheck(userId?: string) {
           return;
         }
 
-        // Check if feedback already submitted or skipped
-        const feedbackKey = `feedback-${userId}-dev-event-${feedbackWindow.timeSlot.slot}`;
-        const existingFeedback = localStorage.getItem(feedbackKey);
+        // Check if feedback already submitted or skipped using centralized key system
+        const feedbackRecord = getFeedbackRecord(userId, feedbackWindow.timeSlot.slot, feedbackWindow.timeSlot.time);
         
-        if (existingFeedback) {
-          try {
-            const feedbackRecord = JSON.parse(existingFeedback);
-            // If feedback was submitted or skipped, don't show popup
-            if (feedbackRecord.status === 'submitted' || feedbackRecord.status === 'skipped') {
-              return;
-            }
-          } catch (e) {
-            console.error('Error parsing feedback record:', e);
+        if (feedbackRecord) {
+          // If feedback was submitted or skipped, don't show popup
+          if (feedbackRecord.status === 'submitted' || feedbackRecord.status === 'skipped') {
+            return;
           }
         }
 
@@ -108,12 +103,8 @@ export function useFeedbackCheck(userId?: string) {
           console.log('🚀 Auto-popup triggering for feedback');
           setIsNavigating(true);
           const timeSlot = feedbackWindow.timeSlot.slot;
-          const date = new Date(feedbackWindow.timeSlot.time);
-          const dateStr = date.toISOString().split('T')[0];
-          const hour = feedbackWindow.timeSlot.time.getHours();
-          const timeSlotStr = hour === 11 ? '11AM' : hour === 14 ? '2PM' : '5PM';
-          const circleId = `${dateStr}_${timeSlotStr}_Circle_1`;
-          router.push(`/feedback?timeSlot=${timeSlot}&eventId=${circleId}`);
+          const eventId = generateEventId(timeSlot, feedbackWindow.timeSlot.time);
+          router.push(`/feedback?timeSlot=${timeSlot}&eventId=${eventId}`);
         }
       } catch (e) {
         console.error('Error checking feedback requirements:', e);
