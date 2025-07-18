@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { TimeSlotWithUserStatus } from "@/lib/types";
 import { useCurrentTime } from "@/lib/hooks/useCurrentTime";
 import { FEEDBACK_ENABLED, UPDATE_INTERVAL } from "@/lib/constants";
+import { typography } from "@/lib/typography";
 
 import LiveClock from "@/components/ui/LiveClock";
 import { useFeedbackCheck } from "@/lib/hooks/useFeedbackCheck";
@@ -423,8 +424,8 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
         </div>
         
         <div className="text-center">
-          <h1 className="text-[4.5vw] min-text-2xl max-text-3xl font-bold text-white mb-[1vh]">Today&apos;s Circles</h1>
-          <p className="text-gray-300 text-[3vw] min-text-sm max-text-base">New conversations waiting to happen</p>
+          <h1 className={`${typography.page.title} text-white mb-[1vh]`}>Today&apos;s Circles</h1>
+          <p className={`${typography.component.small} text-gray-300`}>New conversations waiting to happen</p>
         </div>
       </div>
 
@@ -432,7 +433,7 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
       <div className="flex-1 flex flex-col px-[6vw]">
         {/* Upcoming Times Section - ~50% of viewport */}
         <div className="h-[50vh] min-h-[300px] py-[3vh] flex flex-col">
-          <h2 className="text-gray-700 font-medium text-[3.5vw] min-text-sm max-text-base mb-[2vh]">Upcoming Times</h2>
+          <h2 className={`${typography.section.title} text-gray-700 mb-[2vh]`}>Upcoming Times</h2>
           
           <div className="flex-1 flex flex-col justify-start space-y-3">
             {processedTimeSlots.map((slot, index) => {
@@ -450,7 +451,7 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
                   <div className="flex items-center justify-between">
                     {/* Time - Left side */}
                     <div className="flex-1">
-                      <div className="text-xl font-bold text-gray-900">
+                      <div className={`${typography.section.title} text-gray-900`}>
                         {(() => {
                           const hours = slot.timeSlot.time.getHours();
                           const minutes = slot.timeSlot.time.getMinutes();
@@ -464,7 +465,7 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
                     
                     {/* Decide by - Center area */}
                     <div className="flex-1 text-center">
-                      <p className="text-xs text-gray-500 leading-tight">
+                      <p className={`${typography.component.small} text-gray-500 leading-tight`}>
                         Decide by<br />
                         <span className="font-medium">
                           {formatDeadlineTime({
@@ -483,7 +484,7 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
                       <button
                         onClick={() => handleSlotAction(slot)}
                         disabled={slot.isDisabled}
-                        className={`px-4 py-2 rounded-full text-sm font-medium min-w-[70px] ${getButtonClasses(slot)}`}
+                        className={`px-4 py-2 rounded-full ${typography.component.button} min-w-[70px] ${getButtonClasses(slot)}`}
                         style={slot.buttonState === "join" ? {backgroundColor: '#0E2C54'} : {}}
                       >
                         <div className="flex items-center justify-center space-x-1">

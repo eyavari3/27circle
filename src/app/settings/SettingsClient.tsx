@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { typography } from '@/lib/typography';
 
 export default function SettingsClient() {
   const router = useRouter();
@@ -94,7 +95,7 @@ export default function SettingsClient() {
 
       {/* Title */}
       <div className="px-6 mb-8">
-        <h1 className="text-3xl font-medium text-gray-900">Settings</h1>
+        <h1 className={`${typography.page.title} text-gray-900`}>Settings</h1>
       </div>
 
       {/* Settings Items */}
@@ -110,7 +111,7 @@ export default function SettingsClient() {
                 <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
                   {item.icon === 'person' ? <PersonIcon /> : <LogoutIcon />}
                 </div>
-                <span className="text-lg text-gray-900">{item.label}</span>
+                <span className={`${typography.component.body} text-gray-900`}>{item.label}</span>
               </div>
               
               <div className="flex items-center">
