@@ -39,6 +39,7 @@ export function useFeedbackCheck(userId?: string) {
   useEffect(() => {
     // Check if feedback is enabled globally
     if (!FEEDBACK_ENABLED) {
+      console.log('🔕 Feedback disabled via FEEDBACK_ENABLED flag');
       return;
     }
 
@@ -50,7 +51,18 @@ export function useFeedbackCheck(userId?: string) {
     // Check if we're in a feedback window
     const feedbackWindow = currentFeedbackWindow;
     
+    console.log('🕐 Feedback Check State:', {
+      currentTime: currentTime.toLocaleTimeString(),
+      feedbackWindow: feedbackWindow ? {
+        slot: feedbackWindow.timeSlot.slot,
+        eventTime: feedbackWindow.timeSlot.time.toLocaleTimeString()
+      } : 'none',
+      userId,
+      pathname
+    });
+    
     if (!feedbackWindow || !userId) {
+      console.log('⏰ No feedback window or user - skipping feedback check');
       return;
     }
 
@@ -58,7 +70,13 @@ export function useFeedbackCheck(userId?: string) {
     if (process.env.NODE_ENV === 'development') {
       const devWaitlist = localStorage.getItem('dev-waitlist');
       
+      console.log('📋 Dev waitlist check:', {
+        devWaitlist,
+        waitlistExists: !!devWaitlist
+      });
+      
       if (!devWaitlist) {
+        console.log('📋 No dev-waitlist found - user never joined any events');
         return;
       }
 
