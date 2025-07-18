@@ -56,9 +56,9 @@ export default function TransitionContainer() {
     console.log('✅ TransitionContainer auth check complete, starting splash timer');
     setIsCheckingAuth(false);
     
-    // Start fade out at 12.8s to match SplashScreen's internal timing
+    // Start fade out at 4.8s to match SplashScreen's internal timing
     const fadeOutTimer = setTimeout(() => {
-      console.log('⏰ TransitionContainer fade timer executing at 12.8s');
+      console.log('⏰ TransitionContainer fade timer executing at 4.8s');
       setSplashFading(true);
       // Start curiosity fade in slightly before splash is fully gone
       setTimeout(() => {

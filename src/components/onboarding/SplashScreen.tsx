@@ -65,10 +65,10 @@ export default function SplashScreen() {
       aria-label="Splash screen: Be Curious Together"
       aria-busy={!settled}
     >
-      <div className="flex-1 flex flex-col justify-center text-center px-6 relative z-10 max-w-lg mx-auto pt-[10vh] pb-[8vh]">
-        {/* "27 Circle" Title */}
+      <div className="flex-1 flex flex-col justify-center text-center px-4 relative z-10 max-w-lg mx-auto pt-[10vh] pb-[8vh]">
+        {/* "27 Circle" Title - PRP: Page headers should be 1.875rem (30px) */}
         <h1 
-          className="text-[clamp(2.5rem,8vw,3.5rem)] font-bold tracking-wide mb-[clamp(1rem,4vw,2rem)] transition-all duration-1000 delay-500"
+          className="text-[1.375rem] font-bold tracking-wide mb-4 transition-all duration-1000 delay-500"
           style={{
             opacity: animate ? 1 : 0,
             transform: animate ? 'scale(1)' : 'scale(0.9)',
@@ -80,9 +80,9 @@ export default function SplashScreen() {
           27 Circle
         </h1>
         
-        {/* Logo with Animation Effects */}
+        {/* Logo with Animation Effects - PRP: 3rem (48px) height */}
         <div 
-          className="mb-[clamp(1.5rem,6vw,3rem)] transition-all duration-1000 delay-500"
+          className="mb-6 transition-all duration-1000 delay-500"
           style={{
             opacity: animate ? 1 : 0,
             transform: animate ? 'scale(1)' : 'scale(0.95)',
@@ -90,13 +90,13 @@ export default function SplashScreen() {
             transitionTimingFunction: animate ? 'cubic-bezier(0.34, 1.56, 0.64, 1)' : 'ease-out'
           }}
         >
-          <div className="w-32 h-20 md:w-40 md:h-24 mx-auto relative">
+          <div className="w-12 h-12 mx-auto relative">
             {/* Actual Logo */}
             <Image
               src="/Images/PNG/white-logo.svg"
               alt="27 Circle Logo"
-              width={160}
-              height={96}
+              width={48}
+              height={48}
               className={`w-full h-full object-contain ${
                 animate ? 'animate-logo-draw' : ''
               }`}
@@ -127,28 +127,28 @@ export default function SplashScreen() {
           </div>
         </div>
         
-        {/* "Be Curious Together" Tagline */}
+        {/* "Be Curious Together" Tagline - PRP: Body text should be 1rem (16px) */}
         <p 
-          className="text-[clamp(1.25rem,5vw,1.75rem)] font-light tracking-wide mb-[clamp(1rem,3vw,1.5rem)] transition-all duration-1000 delay-[1500ms]"
+          className="text-[1rem] font-medium tracking-wide mb-4 transition-all duration-1000 delay-[1500ms]"
           style={{
             opacity: animate ? 1 : 0,
             filter: animate ? 'blur(0)' : 'blur(8px)',
             willChange: 'filter, opacity',
-            fontWeight: '300'
+            fontWeight: '500'
           }}
         >
           Be Curious Together
         </p>
         
-        {/* Subtext */}
+        {/* Subtext - PRP: Caption text should be 0.875rem (14px) */}
         <p 
-          className="text-[clamp(0.875rem,3.5vw,1rem)] font-light tracking-wide transition-all duration-1000 delay-[1800ms]"
+          className="text-[0.875rem] font-normal tracking-wide transition-all duration-1000 delay-[1800ms]"
           style={{
             opacity: animate ? 0.8 : 0,
             transform: animate ? 'translateY(0)' : 'translateY(0.5rem)',
             willChange: 'transform, opacity',
             transitionTimingFunction: animate ? 'cubic-bezier(0.34, 1.56, 0.64, 1)' : 'ease-out',
-            fontWeight: '300'
+            fontWeight: '400'
           }}
         >
           Hang out for 20 minutes on campus

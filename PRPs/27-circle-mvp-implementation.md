@@ -758,11 +758,19 @@ const handleSkip = () => {
 ```
 
 #### Responsive Design Features
-- **Clamp-based sizing**: All text uses `clamp()` for fluid responsiveness
+- **Fixed sizing**: Uses exact PRP specifications for consistency
 - **Viewport-relative spacing**: Uses `vh` units for vertical positioning
 - **Mobile-optimized**: Smaller base font size (14px) on mobile
 - **No scrolling**: Content fits within viewport constraints
 - **Click-to-skip**: Entire screen is clickable for immediate transition
+
+#### Updated to Match PRP Design System
+- **Title**: 1.375rem (22px) - matches logo text specification
+- **Logo**: 3rem (48px) height - matches PRP logo specification
+- **Tagline**: 1rem (16px) medium weight - matches body text specification
+- **Subtext**: 0.875rem (14px) regular weight - matches caption specification
+- **Spacing**: 1rem (16px) standard gaps - matches PRP spacing system
+- **Padding**: 1rem (16px) horizontal margins - matches screen padding specification
 
 ### 2. Login/Auth Screen (`/auth`)
 ```jsx
