@@ -5,6 +5,7 @@ import { TimeSlotWithUserStatus } from "@/lib/types";
 import { useCurrentTime } from "@/lib/hooks/useCurrentTime";
 import { FEEDBACK_ENABLED, UPDATE_INTERVAL } from "@/lib/constants";
 import { typography } from "@/lib/typography";
+import { getFeedbackRecord } from "@/lib/feedback-keys";
 
 import LiveClock from "@/components/ui/LiveClock";
 import { useFeedbackCheck } from "@/lib/hooks/useFeedbackCheck";
@@ -191,17 +192,16 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
       let buttonText: string;
       let isDisabled: boolean;
 
-      // Check if feedback was submitted (override state if so)
-      const feedbackKey = `feedback-dev-user-dev-event-${timeSlot.slot}`;
-      const feedbackRecord = typeof window !== 'undefined' ? localStorage.getItem(feedbackKey) : null;
+      // Check if feedback was submitted (override state if so) using centralized key system
       let feedbackSubmitted = false;
       
-      if (feedbackRecord) {
+      if (typeof window !== 'undefined') {
         try {
-          const record = JSON.parse(feedbackRecord);
-          feedbackSubmitted = record.status === 'submitted' || record.status === 'skipped';
+          const feedbackRecord = getFeedbackRecord('dev-user-id', timeSlot.slot, timeSlot.time);
+          feedbackSubmitted = feedbackRecord && (feedbackRecord.status === 'submitted' || feedbackRecord.status === 'skipped');
         } catch (e) {
-          // Ignore parsing errors
+          // Ignore parsing errors - maintain same error handling as before
+          console.error('Error checking feedback record:', e);
         }
       }
 
