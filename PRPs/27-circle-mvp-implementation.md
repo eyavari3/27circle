@@ -205,15 +205,30 @@ function matchUsersForTimeSlot(timeSlot: Date) {
 --error-color: #EF4444;
 ```
 
-### Typography System (Inter Font)
+### Typography System (Inter Font) - Context-Aware
+
+**CORRECTED SPECIFICATIONS** (Previously undersized by 15-25%)
+
 ```css
-/* Font Sizes (rem-based) */
---header-large: 1.875rem;   /* 30px - "Today's Circles" */
---logo-text: 1.375rem;      /* 22px - "27 Circle" */
---section-header: 1.25rem;  /* 20px - Section titles */
---body-text: 1rem;          /* 16px - Default text */
---button-text: 1rem;        /* 16px - Button labels */
---caption: 0.875rem;        /* 14px - Small text */
+/* Hero Context (Splash/Landing pages) */
+--hero-title: 2rem;         /* 32px - "Lead with Curiosity" */  
+--hero-subtitle: 1.125rem;  /* 18px - Hero subtitles */
+
+/* Page Context (Main page headers) */
+--page-title: 1.5rem;       /* 24px - "Settings", "Check your SMS" */
+--page-subtitle: 1.125rem;  /* 18px - Page subtitles */
+--page-header: 1.25rem;     /* 20px - Blue headers: "Upcoming Circle", "How did the 2PM Circle Go?" */
+
+/* Section Context (Content areas) */
+--section-title: 1.125rem;  /* 18px - "Upcoming Times", "Spark:" */
+--section-subtitle: 1rem;   /* 16px - Section subtitles */
+--section-label: 0.875rem;  /* 14px - Form labels: "How many people..." */
+
+/* Component Context (UI elements) */
+--component-body: 1rem;     /* 16px - Main content text */
+--component-small: 0.875rem; /* 14px - Captions, helper text */
+--component-button: 0.875rem; /* 14px - Button text (medium weight) */
+--component-input: 1rem;    /* 16px - Input field text */
 
 /* Font Weights */
 --weight-regular: 400;
@@ -221,6 +236,9 @@ function matchUsersForTimeSlot(timeSlot: Date) {
 --weight-semibold: 600;
 --weight-bold: 700;
 ```
+
+**Implementation**: Use typography utility at `/src/lib/typography.ts`
+- `typography.hero.*` / `typography.page.*` / `typography.section.*` / `typography.component.*`
 
 ### Spacing System (8px Grid)
 ```css

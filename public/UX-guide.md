@@ -26,19 +26,41 @@
 
 ## Typography (Using Inter Font)
 
-### Font Sizes (in rem)
-- **Page Headers ("Today's Circles", etc.)**: `1.875rem` (30px) - Semi-bold weight
-- **Logo Text ("27 Circle")**: `1.375rem` (22px) - Bold weight
-- **Section Headers**: `1.25rem` (20px) - Medium weight
-- **Body Text**: `1rem` (16px) - Regular weight
-- **Input Text**: `1rem` (16px) - Regular weight
-- **Button Text**: `1rem` (16px) - Medium weight
-- **Small Text/Captions**: `0.875rem` (14px) - Regular weight
+### Context-Aware Typography System
+
+This design system uses different typography scales based on visual context to ensure proper hierarchy:
+
+#### Hero Context (Landing/Splash Pages)
+- **Main Title**: `2rem` (32px) - Bold - e.g., "Lead with Curiosity"
+- **Subtitle**: `1.125rem` (18px) - Medium - e.g., splash subtitle
+
+#### Page Context (Main Page Headers)  
+- **Page Title**: `1.5rem` (24px) - Bold - e.g., "Settings", "Check your SMS"
+- **Page Subtitle**: `1.125rem` (18px) - Medium - e.g., page subtitles
+- **Blue Headers**: `1.25rem` (20px) - Bold + White - e.g., "Upcoming Circle", "How did the 2PM Circle Go?"
+
+#### Section Context (Content Areas)
+- **Section Title**: `1.125rem` (18px) - Semibold - e.g., "Upcoming Times", "Spark:"
+- **Section Subtitle**: `1rem` (16px) - Medium - e.g., section subtitles  
+- **Form Labels**: `0.875rem` (14px) - Medium + Gray - e.g., "How many people..."
+
+#### Component Context (UI Elements)
+- **Body Text**: `1rem` (16px) - Regular - main content text
+- **Small Text**: `0.875rem` (14px) - Regular + Gray - captions, helper text
+- **Button Text**: `0.875rem` (14px) - Medium - all button labels
+- **Input Text**: `1rem` (16px) - Regular - form inputs
+
+### Implementation Note
+Use the typography utility at `/src/lib/typography.ts` which provides these scales:
+- `typography.hero.title` / `typography.hero.subtitle`
+- `typography.page.title` / `typography.page.subtitle` / `typography.page.header`
+- `typography.section.title` / `typography.section.subtitle` / `typography.section.label`
+- `typography.component.body` / `typography.component.small` / `typography.component.button` / `typography.component.input`
 
 ### Font Weights
 - Regular: 400
 - Medium: 500
-- Semi-bold: 600
+- Semibold: 600
 - Bold: 700
 
 ## Spacing System (in rem)
