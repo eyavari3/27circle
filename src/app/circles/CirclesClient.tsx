@@ -10,7 +10,7 @@ import { getFeedbackRecord } from "@/lib/feedback-keys";
 import LiveClock from "@/components/ui/LiveClock";
 import { useFeedbackCheck } from "@/lib/hooks/useFeedbackCheck";
 import { 
-  getSlotState, 
+  getButtonState, 
   formatDeadlineTime,
   getDisplayDate,
   createTimeSlots
@@ -157,6 +157,7 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
         circleData: null,
         buttonState: 'join' as const,
         buttonText: 'Join',
+        middleText: `Decide by ${formatDeadlineTime(slot)}`,
         isDisabled: false
       }));
       
@@ -169,13 +170,12 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
     }
   }, [currentDisplayDate, isLoaded, lastDisplayDate]);
 
-  // Memoized button states computation - only recalculates when dependencies change
+  // Method 7: Unified button state computation using pure functions
   const processedTimeSlots = useMemo(() => {
     if (!isLoaded || justReset) return timeSlots;
     
-
-    
     return timeSlots.map(slot => {
+      // Create TimeSlot object for Method 7 functions
       const timeSlot = {
         time: slot.timeSlot.time,
         deadline: slot.timeSlot.deadline,
@@ -183,86 +183,46 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
               slot.timeSlot.time.getHours() === 14 ? '2PM' : '5PM',
         hour: slot.timeSlot.time.getHours()
       } as const;
-      
-      const slotState = getSlotState(timeSlot, currentTime);
-      const slotEndTime = new Date(timeSlot.time);
-      slotEndTime.setMinutes(slotEndTime.getMinutes() + 20);
 
-      let buttonState: TimeSlotWithUserStatus["buttonState"];
-      let buttonText: string;
-      let isDisabled: boolean;
-
-      // Check if feedback was submitted (override state if so) using centralized key system
+      // Check if feedback was submitted (needed for getButtonState)
       let feedbackSubmitted = false;
-      
       if (typeof window !== 'undefined') {
         try {
           const feedbackRecord = getFeedbackRecord('dev-user-id', timeSlot.slot, timeSlot.time);
           feedbackSubmitted = feedbackRecord && (feedbackRecord.status === 'submitted' || feedbackRecord.status === 'skipped');
         } catch (e) {
-          // Ignore parsing errors - maintain same error handling as before
           console.error('Error checking feedback record:', e);
         }
       }
 
-      if (feedbackSubmitted && slotState === 'feedback-available') {
-        // Override: Show "Past" if feedback was submitted
-        buttonState = "past";
-        buttonText = "Past";
-        isDisabled = true;
-      } else if (slotState === 'feedback-available') {
-        if (FEEDBACK_ENABLED && slot.isOnWaitlist) {
-          buttonState = "feedback";
-          buttonText = "Feedback";
-          isDisabled = false;
-        } else {
-          buttonState = "past";
-          buttonText = "Past";
-          isDisabled = true;
-        }
-      } else if (slotState === 'feedback-submitted') {
-        buttonState = "past";
-        buttonText = "Past";
-        isDisabled = true;
-      } else if (slotState === 'pre-deadline') {
-        if (slot.isOnWaitlist) {
-          buttonState = "leave";
-          buttonText = "Can't Go";
-          isDisabled = false;
-        } else {
-          buttonState = "join";
-          buttonText = "Join";
-          isDisabled = false;
-        }
-      } else if (slotState === 'post-deadline') {
-        if (slot.isOnWaitlist) {
-          buttonState = "confirmed";
-          buttonText = "Confirmed ✓";
-          isDisabled = false;
-          // Simulate assignedCircleId for dev
-          if (!slot.assignedCircleId) {
-            const date = new Date(slot.timeSlot.time);
-            const dateStr = date.toISOString().split('T')[0];
-            const hour = slot.timeSlot.time.getHours();
-            const timeSlot = hour === 11 ? '11AM' : hour === 14 ? '2PM' : '5PM';
-            slot.assignedCircleId = `${dateStr}_${timeSlot}_Circle_1`;
-          }
-        } else {
-          buttonState = "closed";
-          buttonText = `Closed at ${formatDeadlineTime(timeSlot)}`;
-          isDisabled = true;
-        }
-      } else {
-        buttonState = "past";
-        buttonText = "Past";
-        isDisabled = true;
+      // Simulate assignedCircleId for development (only if user is on waitlist during event phase)
+      let assignedCircleId = slot.assignedCircleId;
+      if (!assignedCircleId && slot.isOnWaitlist) {
+        const date = new Date(slot.timeSlot.time);
+        const dateStr = date.toISOString().split('T')[0];
+        const hour = slot.timeSlot.time.getHours();
+        const timeSlotStr = hour === 11 ? '11AM' : hour === 14 ? '2PM' : '5PM';
+        assignedCircleId = `${dateStr}_${timeSlotStr}_Circle_1`;
       }
+
+      // Use Method 7 unified button state function
+      const buttonStateResult = getButtonState(
+        {
+          timeSlot,
+          isOnWaitlist: slot.isOnWaitlist,
+          assignedCircleId
+        },
+        currentTime,
+        feedbackSubmitted
+      );
 
       return {
         ...slot,
-        buttonState,
-        buttonText,
-        isDisabled
+        assignedCircleId, // Update with simulated ID if needed
+        buttonState: buttonStateResult.buttonState,
+        buttonText: buttonStateResult.buttonText,
+        middleText: buttonStateResult.middleText,
+        isDisabled: buttonStateResult.isDisabled
       };
     });
   }, [timeSlots, isLoaded, justReset, currentTime]);
@@ -386,7 +346,7 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
     if (slot.buttonState === "feedback") {
       return "bg-orange-100 text-orange-600 border border-orange-300 font-medium";
     }
-    if (slot.buttonState === "closed" || slot.buttonState === "past") {
+    if (slot.buttonState === "past") {
       return "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed font-medium";
     }
     if (slot.buttonState === "leave") {
@@ -463,19 +423,10 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
                       </div>
                     </div>
                     
-                    {/* Decide by - Center area */}
+                    {/* Dynamic middle text - Center area */}
                     <div className="flex-1 text-center">
-                      <p className={`${typography.component.small} text-gray-500 leading-tight`}>
-                        Decide by<br />
-                        <span className="font-medium">
-                          {formatDeadlineTime({
-                            time: slot.timeSlot.time,
-                            deadline: slot.timeSlot.deadline,
-                            slot: slot.timeSlot.time.getHours() === 11 ? '11AM' : 
-                                  slot.timeSlot.time.getHours() === 14 ? '2PM' : '5PM',
-                            hour: slot.timeSlot.time.getHours()
-                          })}
-                        </span>
+                      <p className={`${typography.component.small} text-gray-500 leading-tight font-medium`}>
+                        {slot.middleText}
                       </p>
                     </div>
                     

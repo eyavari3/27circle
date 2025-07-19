@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TimeSlotWithUserStatus, CircleData } from "@/lib/types";
-import { getCurrentPSTTime, getDisplayDate, createTimeSlots, getDayBoundaries } from "@/lib/time";
+import { getCurrentPSTTime, getDisplayDate, createTimeSlots, getDayBoundaries, formatDeadlineTime } from "@/lib/time";
 import CirclesClient from "./CirclesClient";
 
 export default async function CirclesPage() {
@@ -97,6 +97,7 @@ export default async function CirclesPage() {
       circleData: userCircle?.circleData || null,
       buttonState: 'join',
       buttonText: 'Join',
+      middleText: `Decide by ${formatDeadlineTime(slot)}`,
       isDisabled: false
     };
   });

@@ -1,4 +1,4 @@
-export const APP_TIME_OFFSET: number | null = 14.4;
+export const APP_TIME_OFFSET: number | null = 14.5;
 
 // Feedback Feature Toggle
 export const FEEDBACK_ENABLED: boolean = true; // Re-enabled with debug logging to investigate

@@ -51,7 +51,7 @@ export default function TimeSlotCard({ slot }: TimeSlotCardProps) {
 
   const getButtonClasses = () => {
     if (slot.buttonState === "confirmed") return "bg-green-500 text-white hover:bg-green-600";
-    if (slot.buttonState === "closed" || slot.buttonState === "past") return "bg-gray-300 text-gray-500 cursor-not-allowed";
+    if (slot.buttonState === "past") return "bg-gray-300 text-gray-500 cursor-not-allowed";
     if (isOptimisticJoin) return "bg-blue-500 text-white hover:bg-blue-600";
     if (isOptimisticLeave) return "bg-gray-500 text-white hover:bg-gray-600";
     return "bg-blue-500 text-white hover:bg-blue-600";

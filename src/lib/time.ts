@@ -369,3 +369,217 @@ export function getTimeZoneInfo(): {
     timeZone: 'America/Los_Angeles'
   };
 }
+
+// =============================================================================
+// METHOD 7: THREE PURE TIME FUNCTIONS
+// =============================================================================
+
+/**
+ * Method 7 Pure Function 1: Check if current time is before the deadline
+ * 
+ * @param slot - The time slot to check
+ * @param currentTime - Current time (optional, defaults to getCurrentPSTTime)
+ * @returns true if users can still join/leave waitlist
+ */
+export function isBeforeDeadline(slot: TimeSlot, currentTime?: Date): boolean {
+  const time = currentTime || getCurrentPSTTime();
+  return time < slot.deadline;
+}
+
+/**
+ * Method 7 Pure Function 2: Check if current time is during the event window
+ * 
+ * Event window is from deadline until 20 minutes after event start.
+ * During this time, users see confirmed/cancelled states.
+ * 
+ * @param slot - The time slot to check  
+ * @param currentTime - Current time (optional, defaults to getCurrentPSTTime)
+ * @returns true if event is happening or confirmed users should see "Go to Circle"
+ */
+export function isDuringEvent(slot: TimeSlot, currentTime?: Date): boolean {
+  const time = currentTime || getCurrentPSTTime();
+  
+  // Event ends 20 minutes after start time (using millisecond math to avoid DST issues)
+  const eventEndTime = new Date(slot.time.getTime() + 20 * 60 * 1000);
+  
+  return time >= slot.deadline && time < eventEndTime;
+}
+
+/**
+ * Method 7 Pure Function 3: Check if current time is after the event has ended
+ * 
+ * After event ends, users can provide feedback or see "Past" state.
+ * 
+ * @param slot - The time slot to check
+ * @param currentTime - Current time (optional, defaults to getCurrentPSTTime)  
+ * @returns true if event has ended and feedback is available
+ */
+export function isAfterEvent(slot: TimeSlot, currentTime?: Date): boolean {
+  const time = currentTime || getCurrentPSTTime();
+  
+  // Event ends 20 minutes after start time (using millisecond math to avoid DST issues)
+  const eventEndTime = new Date(slot.time.getTime() + 20 * 60 * 1000);
+  
+  return time >= eventEndTime;
+}
+
+/**
+ * Method 7 Helper: Get dynamic middle text based on button state
+ * 
+ * @param buttonState - Current button state
+ * @param slot - Time slot for deadline formatting
+ * @returns Appropriate middle text for the current state
+ */
+export function getMiddleText(
+  buttonState: 'join' | 'leave' | 'confirmed' | 'feedback' | 'past',
+  slot: TimeSlot
+): string {
+  const deadlineTime = formatDeadlineTime(slot);
+  
+  switch (buttonState) {
+    case 'join':
+    case 'leave':
+      return `Decide by ${deadlineTime}`;
+    case 'confirmed':
+    case 'feedback':
+      return `Confirmed at ${deadlineTime}`;
+    case 'past':
+      // For past state, it could be either "Confirmed" or "Closed" depending on user participation
+      // This will be determined by the calling function based on user's circle assignment
+      return `Closed at ${deadlineTime}`;
+    default:
+      return `Closed at ${deadlineTime}`;
+  }
+}
+
+/**
+ * Method 7 Helper: Get dynamic middle text with user context
+ * 
+ * @param buttonState - Current button state
+ * @param slot - Time slot for deadline formatting
+ * @param userWasAssigned - Whether user was assigned to a circle
+ * @returns Contextual middle text based on user's participation
+ */
+export function getMiddleTextWithContext(
+  buttonState: 'join' | 'leave' | 'confirmed' | 'feedback' | 'past',
+  slot: TimeSlot,
+  userWasAssigned: boolean
+): string {
+  const deadlineTime = formatDeadlineTime(slot);
+  
+  switch (buttonState) {
+    case 'join':
+    case 'leave':
+      return `Decide by ${deadlineTime}`;
+    case 'confirmed':
+    case 'feedback':
+      return `Confirmed at ${deadlineTime}`;
+    case 'past':
+      // Dynamic based on whether user participated
+      return userWasAssigned 
+        ? `Confirmed at ${deadlineTime}`
+        : `Closed at ${deadlineTime}`;
+    default:
+      return `Closed at ${deadlineTime}`;
+  }
+}
+
+/**
+ * Method 7 Unified Button State Function
+ * 
+ * This replaces all the complex button state logic with a clean, predictable function
+ * that uses the three pure time functions to determine the correct button state.
+ * 
+ * @param slot - Time slot data from server
+ * @param currentTime - Current time (optional, defaults to getCurrentPSTTime)
+ * @param feedbackSubmitted - Whether user has submitted feedback for this slot
+ * @returns Complete button state with text, middle text, and disabled status
+ */
+export function getButtonState(
+  slot: {
+    timeSlot: TimeSlot;
+    isOnWaitlist: boolean;
+    assignedCircleId: string | null;
+  },
+  currentTime?: Date,
+  feedbackSubmitted: boolean = false
+): {
+  buttonState: 'join' | 'leave' | 'confirmed' | 'feedback' | 'past';
+  buttonText: string;
+  middleText: string;
+  isDisabled: boolean;
+} {
+  const time = currentTime || getCurrentPSTTime();
+  const timeSlot = slot.timeSlot;
+  
+  // Method 7: Use the three pure time functions to determine phase
+  if (isBeforeDeadline(timeSlot, time)) {
+    // RSVP Phase: Users can join or leave waitlist
+    if (slot.isOnWaitlist) {
+      return {
+        buttonState: 'leave',
+        buttonText: "Can't Go",
+        middleText: `Decide by ${formatDeadlineTime(timeSlot)}`,
+        isDisabled: false
+      };
+    } else {
+      return {
+        buttonState: 'join', 
+        buttonText: "Join",
+        middleText: `Decide by ${formatDeadlineTime(timeSlot)}`,
+        isDisabled: false
+      };
+    }
+  }
+  
+  if (isDuringEvent(timeSlot, time)) {
+    // Event Phase: Show confirmed/cancelled based on assignment
+    if (slot.assignedCircleId) {
+      return {
+        buttonState: 'confirmed',
+        buttonText: "Confirmed ✓",
+        middleText: `Confirmed at ${formatDeadlineTime(timeSlot)}`,
+        isDisabled: false
+      };
+    } else {
+      return {
+        buttonState: 'past',
+        buttonText: "Past", 
+        middleText: `Closed at ${formatDeadlineTime(timeSlot)}`,
+        isDisabled: true
+      };
+    }
+  }
+  
+  if (isAfterEvent(timeSlot, time)) {
+    // Review Phase: Show feedback/past based on assignment and feedback status
+    if (slot.assignedCircleId && !feedbackSubmitted) {
+      return {
+        buttonState: 'feedback',
+        buttonText: "Feedback >",
+        middleText: `Confirmed at ${formatDeadlineTime(timeSlot)}`,
+        isDisabled: false
+      };
+    } else {
+      // Past state with contextual middle text
+      const middleText = slot.assignedCircleId 
+        ? `Confirmed at ${formatDeadlineTime(timeSlot)}`
+        : `Closed at ${formatDeadlineTime(timeSlot)}`;
+        
+      return {
+        buttonState: 'past',
+        buttonText: "Past",
+        middleText,
+        isDisabled: true
+      };
+    }
+  }
+  
+  // Fallback (should never reach here)
+  return {
+    buttonState: 'past',
+    buttonText: "Past",
+    middleText: `Closed at ${formatDeadlineTime(timeSlot)}`,
+    isDisabled: true
+  };
+}
