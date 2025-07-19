@@ -5,34 +5,37 @@ import { revalidatePath } from "next/cache";
 import { getCurrentPSTTime, parseTimeSlotString, isValidTimeSlot, createTimeSlots, getDisplayDate } from "@/lib/time";
 import { ensureUserProfile } from "./ensure-profile";
 
-export async function joinWaitlist(timeSlot: string): Promise<{ error: string | null }> {
+export async function joinWaitlist(timeSlot: string, userId?: string): Promise<{ error: string | null }> {
   try {
-    // Get user from regular client (handles cookies/sessions)
-    const authClient = await createClient();
-    const { data: { user }, error: authError } = await authClient.auth.getUser();
+    // Get user ID from parameter or auth
+    let effectiveUserId = userId;
     
-    if (authError) {
-      console.error('Auth error in joinWaitlist:', authError);
-      return { error: "Authentication error. Please sign in again." };
-    }
+    if (!effectiveUserId) {
+      // Get user from regular client (handles cookies/sessions)
+      const authClient = await createClient();
+      const { data: { user }, error: authError } = await authClient.auth.getUser();
+      
+      if (authError) {
+        console.error('Auth error in joinWaitlist:', authError);
+        return { error: "Authentication error. Please try again." };
+      }
 
-    // For development: Skip database operations if no auth
-    if (!user) {
-      // In development without auth, we just return success
-      // The UI will handle optimistic updates
-      revalidatePath("/circles");
-      return { error: null };
+      if (!user) {
+        return { error: "User ID required for waitlist operations." };
+      }
+      
+      effectiveUserId = user.id;
+      
+      // Ensure user has a profile (for authenticated users only)
+      const profileResult = await ensureUserProfile(user.id);
+      if (profileResult.error) {
+        console.error('Profile creation failed:', profileResult.error);
+        return { error: "Failed to create user profile. Please try again." };
+      }
     }
     
     // Use service client for database operations (bypasses RLS)
     const supabase = await createServiceClient();
-    
-    // Ensure user has a profile (for Google OAuth users)
-    const profileResult = await ensureUserProfile(user.id);
-    if (profileResult.error) {
-      console.error('Profile creation failed:', profileResult.error);
-      return { error: "Failed to create user profile. Please try again." };
-    }
 
   // Validate time slot using centralized time system
   if (!isValidTimeSlot(timeSlot)) {
@@ -60,7 +63,7 @@ export async function joinWaitlist(timeSlot: string): Promise<{ error: string | 
     const { error } = await supabase
     .from("waitlist_entries")
     .insert({
-      user_id: user.id,
+      user_id: effectiveUserId,
       time_slot: timeSlot
     });
 
@@ -80,21 +83,30 @@ export async function joinWaitlist(timeSlot: string): Promise<{ error: string | 
   }
 }
 
-export async function leaveWaitlist(timeSlot: string): Promise<{ error: string | null }> {
-  // Get user from regular client (handles cookies/sessions)
-  const authClient = await createClient();
-  const { data: { user } } = await authClient.auth.getUser();
+export async function leaveWaitlist(timeSlot: string, userId?: string): Promise<{ error: string | null }> {
+  try {
+    // Get user ID from parameter or auth
+    let effectiveUserId = userId;
+    
+    if (!effectiveUserId) {
+      // Get user from regular client (handles cookies/sessions)
+      const authClient = await createClient();
+      const { data: { user }, error: authError } = await authClient.auth.getUser();
+      
+      if (authError) {
+        console.error('Auth error in leaveWaitlist:', authError);
+        return { error: "Authentication error. Please sign in again." };
+      }
 
-  // For development: Skip database operations if no auth
-  if (!user) {
-    // In development without auth, we just return success
-    // The UI will handle optimistic updates
-    revalidatePath("/circles");
-    return { error: null };
-  }
-  
-  // Use service client for database operations (bypasses RLS)
-  const supabase = await createServiceClient();
+      if (!user) {
+        return { error: "User ID required for waitlist operations." };
+      }
+      
+      effectiveUserId = user.id;
+    }
+    
+    // Use service client for database operations (bypasses RLS)
+    const supabase = await createServiceClient();
 
   // Validate time slot using centralized time system
   if (!isValidTimeSlot(timeSlot)) {
@@ -119,17 +131,21 @@ export async function leaveWaitlist(timeSlot: string): Promise<{ error: string |
     return { error: "The deadline has passed. You cannot leave this waitlist." };
   }
 
-  const { error } = await supabase
-    .from("waitlist_entries")
-    .delete()
-    .eq("user_id", user.id)
-    .eq("time_slot", timeSlot);
+    const { error } = await supabase
+      .from("waitlist_entries")
+      .delete()
+      .eq("user_id", effectiveUserId)
+      .eq("time_slot", timeSlot);
 
-  if (error) {
-    console.error("Error leaving waitlist:", error.message);
-    return { error: "Could not leave the waitlist. Please try again." };
+    if (error) {
+      console.error("Error leaving waitlist:", error.message);
+      return { error: "Could not leave the waitlist. Please try again." };
+    }
+
+    revalidatePath("/circles");
+    return { error: null };
+  } catch (error) {
+    console.error('Unexpected error in leaveWaitlist:', error);
+    return { error: "An unexpected error occurred. Please try again." };
   }
-
-  revalidatePath("/circles");
-  return { error: null };
 }

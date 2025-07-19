@@ -6,6 +6,7 @@ import { useCurrentTime } from "@/lib/hooks/useCurrentTime";
 import { FEEDBACK_ENABLED, UPDATE_INTERVAL } from "@/lib/constants";
 import { typography } from "@/lib/typography";
 import { getFeedbackRecord } from "@/lib/feedback-keys";
+import { getCurrentUserId, isAnonymousId } from "@/lib/anonymous-user";
 
 import LiveClock from "@/components/ui/LiveClock";
 import { useFeedbackCheck } from "@/lib/hooks/useFeedbackCheck";
@@ -25,9 +26,10 @@ import { Location } from "@/lib/types";
 interface CirclesClientProps {
   initialTimeSlots: TimeSlotWithUserStatus[];
   serverTime?: Date;
+  authenticatedUser?: { id: string } | null;
 }
 
-export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesClientProps) {
+export default function CirclesClient({ initialTimeSlots, serverTime, authenticatedUser }: CirclesClientProps) {
   const { getNow } = useCurrentTime(serverTime);
   
   // Use state for current time with interval updates (not every render)
@@ -100,27 +102,30 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
     fetchLocation();
   }, []);
 
-  // Load persisted waitlist state from localStorage on mount
+  // Get current user ID (authenticated or anonymous)
+  const currentUserId = getCurrentUserId(authenticatedUser);
+  
+  // Load user's waitlist state from database on mount
   useEffect(() => {
-    // Comment out clear for testing persistence
-    // if (process.env.NODE_ENV === 'development') {
-    //   localStorage.removeItem('dev-waitlist');
-    // }
-
-    const persistedWaitlist = localStorage.getItem('dev-waitlist');
-    if (persistedWaitlist) {
-      try {
-        const waitlistSet = new Set(JSON.parse(persistedWaitlist));
-        setTimeSlots(prev => prev.map(slot => ({
-          ...slot,
-          isOnWaitlist: waitlistSet.has(slot.timeSlot.time.toISOString())
-        })));
-      } catch (e) {
-        console.error('Error loading persisted waitlist:', e);
+    async function loadUserWaitlistState() {
+      // For anonymous users, fetch from database using their anonymous ID
+      if (isAnonymousId(currentUserId)) {
+        try {
+          // TODO: Add database fetch for anonymous user waitlist state
+          // For now, just mark as loaded
+          setIsLoaded(true);
+        } catch (e) {
+          console.error('Error loading anonymous user waitlist:', e);
+          setIsLoaded(true);
+        }
+      } else {
+        // For authenticated users, state comes from server (initialTimeSlots)
+        setIsLoaded(true);
       }
     }
-    setIsLoaded(true);
-  }, []);
+    
+    loadUserWaitlistState();
+  }, [currentUserId]);
 
   // Memoized display date computation - only recalculates when needed
   const currentDisplayDate = useMemo(() => {
@@ -138,10 +143,6 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
     
     // Check if the display date has changed (crossed 8PM boundary)
     if (currentDisplayDate.getTime() !== lastDisplayDate.getTime()) {
-      // FIRST: Clear localStorage waitlist for the new day (in development)
-      if (process.env.NODE_ENV === 'development') {
-        localStorage.removeItem('dev-waitlist');
-      }
       
       // Create new time slots for the new day
       const newTimeSlots = createTimeSlots(currentDisplayDate);
@@ -268,13 +269,7 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
           return s;
         });
 
-        // Persist to localStorage for development
-        const currentWaitlist = updated
-          .filter(s => s.isOnWaitlist)
-          .map(s => s.timeSlot.time.toISOString());
-        if (process.env.NODE_ENV === 'development') {
-          localStorage.setItem('dev-waitlist', JSON.stringify(currentWaitlist));
-        }
+        // Database persistence handled by server actions
 
         return updated;
       });
@@ -282,8 +277,8 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
       // Background server action (no loading UI)
       try {
         const result = isJoining 
-          ? await joinWaitlist(slot.timeSlot.time.toISOString())
-          : await leaveWaitlist(slot.timeSlot.time.toISOString());
+          ? await joinWaitlist(slot.timeSlot.time.toISOString(), currentUserId)
+          : await leaveWaitlist(slot.timeSlot.time.toISOString(), currentUserId);
 
         if (result.error) {
           // Revert optimistic update on error
@@ -298,13 +293,7 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
               return s;
             });
 
-            // Update localStorage with reverted state
-            const revertedWaitlist = reverted
-              .filter(s => s.isOnWaitlist)
-              .map(s => s.timeSlot.time.toISOString());
-            if (process.env.NODE_ENV === 'development') {
-              localStorage.setItem('dev-waitlist', JSON.stringify(revertedWaitlist));
-            }
+            // Database state managed by server actions
 
             return reverted;
           });
@@ -323,13 +312,7 @@ export default function CirclesClient({ initialTimeSlots, serverTime }: CirclesC
             return s;
           });
 
-          // Update localStorage with reverted state
-          const revertedWaitlist = reverted
-            .filter(s => s.isOnWaitlist)
-            .map(s => s.timeSlot.time.toISOString());
-          if (process.env.NODE_ENV === 'development') {
-            localStorage.setItem('dev-waitlist', JSON.stringify(revertedWaitlist));
-          }
+          // Database state managed by server actions
 
           return reverted;
         });

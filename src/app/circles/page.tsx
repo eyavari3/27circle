@@ -102,5 +102,9 @@ export default async function CirclesPage() {
     };
   });
   
-  return <CirclesClient initialTimeSlots={timeSlotsWithStatus} serverTime={currentTime} />;
+  return <CirclesClient 
+    initialTimeSlots={timeSlotsWithStatus} 
+    serverTime={currentTime} 
+    authenticatedUser={user}
+  />;
 }
