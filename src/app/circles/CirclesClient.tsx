@@ -196,9 +196,10 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
         }
       }
 
-      // Simulate assignedCircleId for development (only if user is on waitlist during event phase)
+      // Simulate assignedCircleId for development (only if user is on waitlist AND deadline has passed)
       let assignedCircleId = slot.assignedCircleId;
-      if (!assignedCircleId && slot.isOnWaitlist) {
+      if (!assignedCircleId && slot.isOnWaitlist && currentTime >= timeSlot.deadline) {
+        // Matching algorithm runs at deadline - simulate assignment
         const date = new Date(slot.timeSlot.time);
         const dateStr = date.toISOString().split('T')[0];
         const hour = slot.timeSlot.time.getHours();
