@@ -108,24 +108,28 @@ Build a web application that facilitates spontaneous, in-person meetups for Stan
 #### B. Button States & Time Logic
 **State Machine** (for each time slot):
 
-**"Join Circle"** (Primary Action)
+**"Join"** (Primary Action)
 - When: Before deadline (10AM/1PM/4PM)
-- Color: Navy blue (#152B5C)
+- Button: Navy blue (#152B5C)
+- Middle Text: "Decide by 10AM" / "Decide by 1PM" / "Decide by 4PM"
 - User not on waitlist
 
-**"Leave Waitlist"** (Secondary Action)
+**"Can't Go"** (Secondary Action)
 - When: Before deadline
-- Color: Muted red
+- Button: Gray with red text
+- Middle Text: "Decide by 10AM" / "Decide by 1PM" / "Decide by 4PM"
 - User already on waitlist
 
 **"Confirmed ✓"** (Success State)
-- When: After deadline, user on waitlist, matched
-- Color: Success green
+- When: After deadline, user matched to circle
+- Button: Success green
+- Middle Text: "Confirmed at 10AM" / "Confirmed at 1PM" / "Confirmed at 4PM"
 - Clickable → Circle details
 
-**"Closed"** (Missed State)
-- When: After deadline, user not on waitlist
-- Color: Gray
+**"Past"** (Missed/Closed State)
+- When: After deadline, user not matched OR never joined
+- Button: Gray, disabled
+- Middle Text: "Closed at 10AM" / "Closed at 1PM" / "Closed at 4PM"
 - Non-interactive
 
 **"In Progress"** (Active State)
@@ -133,17 +137,24 @@ Build a web application that facilitates spontaneous, in-person meetups for Stan
 - Shows countdown timer
 - If matched: Shows "Join your circle →"
 
-**"Feedback"** (Optional State)
-- When: 20 minutes after circle end time
-- Color: Orange
-- Behavior: Can submit feedback or skip
-- Auto-popup: 60 minutes after circle start time (separate from button state)
-- Reset: Button remains "Feedback" until 8 PM reset (even if skipped)
+**"Feedback >"** (Post-Circle State)
+- When: 20 minutes after circle start time (11:20am, 2:20pm, 5:20pm)
+- Button: Orange/yellow
+- Middle Text: "Confirmed at 10AM" / "Confirmed at 1PM" / "Confirmed at 4PM" (same as confirmed state)
+- Behavior: Opens feedback modal/form
+- Disappears when: User submits feedback OR at 8PM daily reset
+- Skip behavior: Modal closes, returns to main page, "Feedback" button remains
+- Auto-popup: Exactly 1hr after start time (12pm, 3pm, 6pm) - ONLY if feedback not already submitted
+- Reset timing: All buttons show "Past" at 7:59pm, switch to "Join" at 8:00pm
 
-**"Past"** (Completed State)
-- When: After feedback submitted OR at 8 PM reset
-- Color: Gray, disabled
+**"Past"** (Completed State) 
+- When: After feedback submitted OR during 7:59pm transition period
+- Button: Gray, disabled
+- Middle Text: Dynamic based on user journey:
+  - If user was matched: "Confirmed at [Time]"
+  - If user was not matched: "Closed at [Time]"
 - Behavior: Not clickable
+- Transitions to "Join" at 8:00pm daily reset
 
 #### C. Circle Details Screen
 **Route**: `/circles/[circleId]`
@@ -473,6 +484,183 @@ function matchUsersForTimeSlot(timeSlotId: string) {
 - Rollback plan for each feature
 - Database migrations with backups
 - Zero-downtime deployments
+
+---
+
+## METHOD 7 BUTTON SYSTEM IMPLEMENTATION
+
+### Overview
+This section documents the complete implementation of Method 7 - a bulletproof approach to fix the 5-button state system using three pure time functions and database as single source of truth.
+
+### Problem Statement
+The current button system has critical issues:
+- Complex localStorage/database dual system creates sync bugs
+- Button states don't match Template.png specifications
+- Feedback buttons don't appear when they should
+- Middle text is hardcoded instead of dynamic
+- Development and production use different logic paths
+
+### Method 7 Solution
+**Core Principle**: Use three pure time functions to determine what phase each time slot is in, then query database for user participation to show correct button state.
+
+#### Three Pure Time Functions:
+1. `isBeforeDeadline(slot, currentTime)` - Can still join/leave waitlist
+2. `isDuringEvent(slot, currentTime)` - Event is happening or confirmed
+3. `isAfterEvent(slot, currentTime)` - Event finished, feedback available
+
+#### Button State Logic:
+- **Before Deadline**: Join/Can't Go based on waitlist status
+- **During Event**: Confirmed/Past based on circle assignment
+- **After Event**: Feedback/Past based on assignment + feedback status
+
+### Implementation Phases
+
+#### Phase 1: Database Foundation
+**Changes:**
+- Disable RLS on core tables: `users`, `waitlist_entries`, `circles`, `circle_members`, `feedback`
+- Rationale: 100 trusted Stanford users don't need complex security for MVP
+- Create development seed script with time-aware test scenarios
+- Add feedback database integration (currently uses localStorage in production)
+
+**Database Commands:**
+```sql
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE waitlist_entries DISABLE ROW LEVEL SECURITY;
+ALTER TABLE circles DISABLE ROW LEVEL SECURITY;
+ALTER TABLE circle_members DISABLE ROW LEVEL SECURITY;
+ALTER TABLE feedback DISABLE ROW LEVEL SECURITY;
+```
+
+#### Phase 2: Core Backend Logic
+**File: `/src/lib/time.ts`**
+- Add three pure time functions using proper millisecond math (fixes DST issues)
+- Replace complex `getSlotState()` with clean time boundary checks
+- Add comprehensive error boundaries for null/undefined data
+
+**File: `/src/app/circles/CirclesClient.tsx`**
+- Create unified `getButtonState()` function
+- Replace lines 208-259 (complex nested if-else) with Method 7 logic
+- Add dynamic middle text generation based on button state
+
+#### Phase 3: Data Source Migration
+**Critical Changes:**
+- Remove ALL localStorage from button logic (lines 104-123, 141-144, 310-318)
+- Implement development user fallback: `userId = user?.id || 'dev-user-${process.pid}'`
+- Migrate existing feedback data: localStorage → database before code deletion
+- Use server data as single source of truth
+
+**Migration Strategy:**
+1. Run feedback migration script during deployment
+2. Verify data transfer completeness
+3. Remove localStorage code only after migration confirmed
+
+#### Phase 4: Real-Time Updates
+**Enhancements:**
+- Add periodic refresh every 60 seconds for deadline transitions
+- Implement optimistic updates for button clicks with database sync
+- Maintain client-side computation for performance (not server-side)
+
+### Top 10 Implementation Pitfalls
+
+1. **RLS Disable Timing**: Schedule during maintenance window, test on staging first
+2. **Feedback Data Loss**: Run migration script before deleting localStorage code
+3. **Dev User Collisions**: Use process.pid for unique dev user per terminal session
+4. **Database Query Performance**: Batch queries, avoid N+1 patterns
+5. **Time Zone Edge Cases**: Use millisecond math only: `new Date(slot.time.getTime() + 20 * 60 * 1000)`
+6. **Null Data Crashes**: Add null checks and fallback states in every function
+7. **Real-Time State Staleness**: Implement client-side interval refresh
+8. **Authentication Edge Cases**: Handle user logout gracefully
+9. **Circle Assignment Gaps**: Validate circle existence before showing confirmed states
+10. **Testing Time Dependencies**: Mock current time in tests, use APP_TIME_OFFSET patterns
+
+### Development Testing Strategy
+
+#### APP_TIME_OFFSET Integration
+The existing `APP_TIME_OFFSET` system works perfectly with Method 7:
+- Set `APP_TIME_OFFSET = 14.5` to test 2:30 PM scenarios
+- All three time functions respect the offset through `useCurrentTime()` hook
+- No changes needed to time management infrastructure
+
+#### Test Scenarios:
+```bash
+# Test pre-deadline (9:30 AM)
+APP_TIME_OFFSET = 9.5
+# Expected: Join/Can't Go buttons, "Decide by [deadline]" middle text
+
+# Test post-deadline confirmed (2:10 PM) 
+APP_TIME_OFFSET = 14.17
+# Expected: Confirmed ✓ button, "Confirmed at 1PM" middle text
+
+# Test feedback window (2:25 PM)
+APP_TIME_OFFSET = 14.42
+# Expected: Feedback > button, "Confirmed at 1PM" middle text
+
+# Test daily reset (8:30 PM)
+APP_TIME_OFFSET = 20.5
+# Expected: All slots reset to Join buttons for next day
+```
+
+#### Development Data Seeding
+```bash
+npm run dev:seed -- --time-offset=14.5
+```
+Creates realistic test data:
+- Dev user with complete profile
+- Waitlist entries for various time slots
+- Mock circles and assignments
+- Sample feedback data
+
+### Code Changes Summary
+
+#### Files Modified:
+- `INITIAL.md` - This documentation
+- `src/lib/time.ts` - Add three pure time functions
+- `src/app/circles/CirclesClient.tsx` - Replace button logic
+- `src/app/circles/page.tsx` - Use database for all data
+- Database schema - Disable RLS policies
+
+#### Lines of Code:
+- **Deleted**: ~150 lines of localStorage complexity
+- **Added**: ~80 lines of clean database logic
+- **Net Result**: Simpler, more maintainable codebase
+
+### Success Validation Checklist
+
+#### Functional Requirements:
+- ✅ All 5 button states display correctly: Join, Can't Go, Confirmed ✓, Feedback >, Past
+- ✅ Dynamic middle text: "Decide by [time]", "Confirmed at [time]", "Closed at [time]"
+- ✅ Feedback buttons appear exactly 20 minutes after event start
+- ✅ Daily reset at 8PM PST works correctly
+- ✅ APP_TIME_OFFSET testing covers all scenarios
+
+#### Technical Requirements:
+- ✅ Database queries work without authentication (RLS disabled)
+- ✅ No localStorage references in button logic code
+- ✅ Real-time updates work for deadline transitions
+- ✅ Development seeding provides complete test scenarios
+- ✅ Existing feedback data migrated without loss
+- ✅ Error states handle null/undefined data gracefully
+- ✅ Performance remains acceptable (no N+1 queries)
+
+#### User Experience:
+- ✅ Button states match Template.png design exactly
+- ✅ Users see correct states based on their actual participation
+- ✅ State transitions happen at correct times
+- ✅ No confusion about button meanings or actions
+
+### Future Considerations
+
+#### Post-MVP Scaling:
+- Re-enable RLS when scaling beyond 100 trusted users
+- Add more sophisticated caching for button state computation
+- Implement WebSocket for real-time updates instead of polling
+- Add analytics tracking for button interaction patterns
+
+#### Maintenance:
+- Monitor database performance as user base grows
+- Add comprehensive logging for button state transitions
+- Create automated testing for time-based edge cases
+- Document operational procedures for data migrations
 
 ---
 
