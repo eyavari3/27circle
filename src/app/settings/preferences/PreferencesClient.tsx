@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { updateUserInterests } from './actions';
 
 interface PreferenceOption {
   key: string;
@@ -11,7 +12,11 @@ interface PreferenceOption {
   glowColor: 'blue' | 'gold';
 }
 
-export default function PreferencesClient() {
+interface PreferencesClientProps {
+  initialData: string[] | null;
+}
+
+export default function PreferencesClient({ initialData }: PreferencesClientProps) {
   const router = useRouter();
   const [selectedPreferences, setSelectedPreferences] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -50,7 +55,10 @@ export default function PreferencesClient() {
 
   // Load saved preferences on mount
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
+    // Use initialData from database first, then fallback to localStorage in dev
+    if (initialData && initialData.length > 0) {
+      setSelectedPreferences(initialData);
+    } else if (process.env.NODE_ENV === 'development') {
       const saved = localStorage.getItem('dev-user-preferences');
       if (saved) {
         try {
@@ -60,7 +68,7 @@ export default function PreferencesClient() {
         }
       }
     }
-  }, []);
+  }, [initialData]);
 
   const togglePreference = (key: string) => {
     setSelectedPreferences(prev => 
@@ -74,13 +82,20 @@ export default function PreferencesClient() {
     setIsSaving(true);
     
     try {
+      // Save to database
+      const result = await updateUserInterests(selectedPreferences);
+      
+      if (result.error) {
+        console.error('Error saving preferences:', result.error);
+        // Could add toast notification here
+        return;
+      }
+      
+      // Also save to localStorage in dev mode for testing
       if (process.env.NODE_ENV === 'development') {
         localStorage.setItem('dev-user-preferences', JSON.stringify(selectedPreferences));
         console.log('✅ Preferences saved:', selectedPreferences);
       }
-      
-      // In production, this would save to the database
-      // await saveUserPreferences(selectedPreferences);
       
       // Small delay for UX
       await new Promise(resolve => setTimeout(resolve, 500));

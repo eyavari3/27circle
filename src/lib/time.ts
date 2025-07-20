@@ -5,7 +5,7 @@
  * All time handling MUST go through this module to ensure consistency.
  */
 
-import { APP_TIME_OFFSET } from './constants';
+import { getAppTimeOffset } from './constants';
 
 // =============================================================================
 // CORE TIME FUNCTIONS
@@ -20,9 +20,10 @@ export function getCurrentPSTTime(): Date {
   let pstTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
   
   // Apply APP_TIME_OFFSET if set for testing
-  if (APP_TIME_OFFSET !== null) {
-    pstTime.setHours(Math.floor(APP_TIME_OFFSET));
-    pstTime.setMinutes((APP_TIME_OFFSET % 1) * 60);
+  const timeOffset = getAppTimeOffset();
+  if (timeOffset !== null) {
+    pstTime.setHours(Math.floor(timeOffset));
+    pstTime.setMinutes((timeOffset % 1) * 60);
     pstTime.setSeconds(0);
     pstTime.setMilliseconds(0);
   }
@@ -86,11 +87,11 @@ export function createTimeSlots(displayDate?: Date): TimeSlot[] {
   const month = baseDate.getMonth();
   const date = baseDate.getDate();
   
-  // Create PST dates by parsing them as PST strings
+  // Create dates consistently for server/client hydration
   const createPSTDate = (hour: number, minute: number = 0) => {
-    const pstString = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')} ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
-    // Parse as PST time
-    return new Date(new Date(pstString + ' PST').toLocaleString('en-US', { timeZone: 'UTC' }));
+    // Use baseDate's year/month/date but set specific time
+    const pstDate = new Date(year, month, date, hour, minute, 0, 0);
+    return pstDate;
   };
   
   return [
@@ -373,7 +374,7 @@ export function getTimeZoneInfo(): {
   return {
     currentTime,
     pstTime,
-    offset: APP_TIME_OFFSET,
+    offset: getAppTimeOffset(),
     timeZone: 'America/Los_Angeles'
   };
 }

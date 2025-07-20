@@ -2,7 +2,7 @@
 
 import { useRef, useCallback, useEffect } from "react";
 import { getCurrentPSTTime } from "@/lib/time";
-import { APP_TIME_OFFSET } from "@/lib/constants";
+import { getAppTimeOffset } from "@/lib/constants";
 
 // Browser compatibility fallbacks
 const performanceNow = (): number => {
@@ -56,9 +56,10 @@ export function useCurrentTime(initialTime?: Date) {
       const currentPST = getCurrentPSTTime();
       
       // Apply APP_TIME_OFFSET if it's set (for testing)
-      if (APP_TIME_OFFSET !== null) {
-        currentPST.setHours(Math.floor(APP_TIME_OFFSET));
-        currentPST.setMinutes((APP_TIME_OFFSET % 1) * 60);
+      const timeOffset = getAppTimeOffset();
+      if (timeOffset !== null) {
+        currentPST.setHours(Math.floor(timeOffset));
+        currentPST.setMinutes((timeOffset % 1) * 60);
         currentPST.setSeconds(0);
         currentPST.setMilliseconds(0);
       }
@@ -76,7 +77,7 @@ export function useCurrentTime(initialTime?: Date) {
       baselineRef.current = newBaseline;
       if (isDebug) {
         console.log('🔄 Time baseline resynced:', new Date(newBaseline.time), 
-          APP_TIME_OFFSET ? `(APP_TIME_OFFSET: ${APP_TIME_OFFSET})` : '');
+          timeOffset ? `(APP_TIME_OFFSET: ${timeOffset})` : '');
       }
     } catch (error) {
       // Fallback to Date.now() if timezone computation fails

@@ -1,4 +1,11 @@
-export const APP_TIME_OFFSET: number | null =null;
+export function getAppTimeOffset(): number | null {
+  const offset = process.env.NEXT_PUBLIC_APP_TIME_OFFSET;
+  if (!offset) return null;
+  if (offset === 'null') return null;
+  
+  const parsed = parseFloat(offset);
+  return isNaN(parsed) ? null : parsed;
+}
 
 // Feedback Feature Toggle
 export const FEEDBACK_ENABLED: boolean = true; // Re-enabled with debug logging to investigate

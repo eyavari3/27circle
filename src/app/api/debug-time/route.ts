@@ -9,8 +9,8 @@ export async function GET(request: NextRequest) {
   const pstTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
   
   // Check APP_TIME_OFFSET
-  const APP_TIME_OFFSET = process.env.APP_TIME_OFFSET || 
-    (await import('@/lib/constants')).APP_TIME_OFFSET;
+  const { getAppTimeOffset } = await import('@/lib/constants');
+  const APP_TIME_OFFSET = getAppTimeOffset();
   
   // Get today's date for time slots
   const today = new Date(pstTime);
