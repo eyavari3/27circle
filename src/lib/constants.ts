@@ -13,6 +13,8 @@ export const FEEDBACK_ENABLED: boolean = true; // Re-enabled with debug logging 
 // Performance: Time update interval (milliseconds)
 export const UPDATE_INTERVAL: number = 10000; // 10 seconds (6x fewer re-renders than 1 second)
 
+
+//  NEXT_PUBLIC_APP_TIME_OFFSET=18 npm run dev
 //  Change the APP_TIME_OFFSET value:
 //  null = real PST time
 //  14.5 = 2:30 PM today

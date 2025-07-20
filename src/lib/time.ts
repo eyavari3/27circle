@@ -89,8 +89,12 @@ export function createTimeSlots(displayDate?: Date): TimeSlot[] {
   
   // Create dates consistently for server/client hydration
   const createPSTDate = (hour: number, minute: number = 0) => {
-    // Use baseDate's year/month/date but set specific time
-    const pstDate = new Date(year, month, date, hour, minute, 0, 0);
+    // Start with current PST time to ensure proper timezone, then set specific time
+    const basePSTTime = getCurrentPSTTime();
+    const pstDate = new Date(basePSTTime);
+    // Set to the target date and specific hour/minute
+    pstDate.setFullYear(year, month, date);
+    pstDate.setHours(hour, minute, 0, 0);
     return pstDate;
   };
   
