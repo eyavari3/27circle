@@ -5,6 +5,12 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --color-header-bg: #152B5C;
+  --color-white: #FFFFFF;
+  --color-text-primary: #444744;
+  --color-text-secondary: #6B7280;
+  --color-button: #1A336A;
+  --color-border: #EBEBEB;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -66,24 +72,37 @@ a {
 }
 
 /* Responsive text size utilities */
-/* CSS Grid Layout Support for Mobile */
-@supports (display: grid) {
-  .grid-mobile-layout {
-    display: grid;
-    grid-template-rows: minmax(100px, 15vh) 1fr minmax(140px, 20vh);
-    height: 100vh;
-    height: 100dvh;
-  }
-}
-
-/* Fallback for browsers without dvh support */
-@supports not (height: 100dvh) {
-  .grid-mobile-layout {
-    height: 100vh;
-  }
-}
+/* Remove grid constraints - let content flow naturally */
 
 @layer utilities {
+  /* Flexible main container - no fixed dimensions */
+  .main-container {
+    width: 100%;
+    min-height: 100vh;
+    background: #FFFFFF; /* White background from Figma */
+  }
+  
+  /* Desktop: centered with max-width */
+  @media (min-width: 48rem) { /* 768px */
+    .main-container {
+      max-width: 24.375rem; /* 390px max on desktop */
+      margin: 0 auto;
+      box-shadow: 0 0 1.25rem rgba(0,0,0,0.1);
+      border-radius: 1rem;
+      overflow: hidden;
+    }
+  }
+  
+  /* Smooth transitions for interactions */
+  .transition-opacity { 
+    transition: opacity 200ms ease-in-out; 
+  }
+  
+  .hover-opacity:hover { 
+    opacity: 0.9; 
+  }
+  
+  /* Original utilities kept for compatibility */
   .min-text-xs { font-size: max(0.75rem, 1em); }
   .min-text-sm { font-size: max(0.875rem, 1em); }
   .min-text-base { font-size: max(1rem, 1em); }
@@ -91,34 +110,11 @@ a {
   .min-text-xl { font-size: max(1.25rem, 1em); }
   .min-text-2xl { font-size: max(1.5rem, 1em); }
   .min-text-3xl { font-size: max(1.875rem, 1em); }
-  
-  .max-text-xs { font-size: min(0.75rem, 1em); }
-  .max-text-sm { font-size: min(0.875rem, 1em); }
-  .max-text-base { font-size: min(1rem, 1em); }
-  .max-text-lg { font-size: min(1.125rem, 1em); }
-  .max-text-xl { font-size: min(1.25rem, 1em); }
-  .max-text-2xl { font-size: min(1.5rem, 1em); }
-  .max-text-3xl { font-size: min(1.875rem, 1em); }
-  
-  .max-rounded-xl { border-radius: min(0.75rem, 1em); }
-  .max-rounded-2xl { border-radius: min(1rem, 1em); }
-  
-  .min-px-2 { padding-left: max(0.5rem, 1em); padding-right: max(0.5rem, 1em); }
-  .min-px-4 { padding-left: max(1rem, 1em); padding-right: max(1rem, 1em); }
-  .min-py-1 { padding-top: max(0.25rem, 0.5em); padding-bottom: max(0.25rem, 0.5em); }
-  .min-w-[16px] { min-width: 16px; }
-  .min-w-[20px] { min-width: 20px; }
-  .min-w-[32px] { min-width: 32px; }
-  .min-h-[38px] { min-height: 38px; }
-  .max-w-[20px] { max-width: 20px; }
-  .max-w-[24px] { max-width: 24px; }
-  .max-w-[40px] { max-width: 40px; }
-  .max-h-[48px] { max-height: 48px; }
 }
 
 /* Map container with exact height */
 .map-container {
-  height: 230px; /* 14.375rem - exact specification */
+  height: 14.375rem; /* 230px converted to REM */
   overflow: hidden;
 }
 

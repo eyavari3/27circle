@@ -382,15 +382,15 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
   };
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
-      {/* Header Section - Target: 8.75rem (140px) */}
-      <div className="h-[140px] px-6 flex flex-col justify-center relative" style={{backgroundColor: '#152B5C'}}>
+    <div className="main-container">
+      {/* Header Section */}
+      <header className="px-[1.25rem] py-[3rem] relative" style={{backgroundColor: 'var(--color-header-bg)'}}>
         <button 
           onClick={() => {
             router.push('/settings');
           }}
-          className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-colors"
-          style={{backgroundColor: '#1C3A7A'}}
+          className="absolute top-[1rem] right-[1rem] w-[2.5rem] h-[2.5rem] rounded-full flex items-center justify-center transition-opacity hover-opacity"
+          style={{backgroundColor: 'var(--color-button)'}}
           aria-label="Settings"
         >
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -400,63 +400,53 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
         </button>
         
         <div className="text-center">
-          <h1 className="text-[2rem] font-bold text-white leading-tight">Today&apos;s Circles</h1>
-          <p className="text-base font-normal text-gray-300 mt-2">New conversations waiting to happen</p>
+          <h1 className="text-[2rem] font-bold leading-tight" style={{color: 'var(--color-white)'}}>Today&apos;s Circles</h1>
+          <p className="text-base font-normal mt-2" style={{color: 'var(--color-white)'}}>New conversations waiting to happen</p>
         </div>
-      </div>
+      </header>
 
-      {/* Main Content - Scrollable if needed */}
-      <div className="flex-1 px-6 overflow-y-auto">
+      {/* Main Content - flexible padding */}
+      <main className="px-[1.25rem] py-[1.5rem]">
         {/* Upcoming Times Section */}
-        <div className="pt-6">
-          <h2 className="text-xl font-medium text-gray-900 mb-4">Upcoming Times</h2>
+        <section>
+          <h2 className="text-xl font-medium mb-4" style={{color: 'var(--color-text-primary)'}}>Upcoming Times</h2>
           
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {processedTimeSlots.map((slot, index) => {
               const slotKey = slot.timeSlot.time.toISOString();
               
               return (
                 <div 
                   key={index} 
-                  className="h-[72px] bg-white rounded-2xl px-6 flex items-center shadow-sm"
+                  className="flex items-center justify-between px-[1rem] h-[3rem] bg-white border rounded-lg"
                   style={{
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+                    borderColor: 'var(--color-border)'
                   }}
                 >
-                  <div className="w-full flex items-center justify-between">
-                    {/* Time - Left side */}
-                    <div className="flex-1">
-                      <div className="text-[1.75rem] font-medium text-gray-900">
-                        {(() => {
-                          const hours = slot.timeSlot.time.getHours();
-                          const minutes = slot.timeSlot.time.getMinutes();
-                          const period = hours >= 12 ? 'PM' : 'AM';
-                          const displayHours = hours % 12 || 12;
-                          const displayMinutes = minutes.toString().padStart(2, '0');
-                          return `${displayHours}:${displayMinutes} ${period}`;
-                        })()}
-                      </div>
-                    </div>
-                    
-                    {/* Dynamic middle text - Center area */}
-                    <div className="flex-1 text-center">
-                      <p className="text-xs font-normal text-gray-500">
-                        {slot.middleText}
-                      </p>
-                    </div>
-                    
-                    {/* Button - Right side */}
-                    <div className="flex-1 flex justify-end">
-                      <button
-                        onClick={() => handleSlotAction(slot)}
-                        disabled={slot.isDisabled}
-                        className={`w-[72px] h-9 rounded-full text-base font-medium flex items-center justify-center ${getButtonClasses(slot)}`}
-                        style={slot.buttonState === "join" ? {backgroundColor: '#152B5C', color: '#FFFFFF'} : {}}
-                      >
-                        {slot.buttonText}
-                      </button>
-                    </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-[1.125rem] font-medium whitespace-nowrap" style={{color: 'var(--color-text-primary)'}}>
+                      {(() => {
+                        const hours = slot.timeSlot.time.getHours();
+                        const minutes = slot.timeSlot.time.getMinutes();
+                        const period = hours >= 12 ? 'PM' : 'AM';
+                        const displayHours = hours % 12 || 12;
+                        const displayMinutes = minutes.toString().padStart(2, '0');
+                        return `${displayHours}:${displayMinutes} ${period}`;
+                      })()}
+                    </span>
+                    <span className="text-[0.875rem] font-normal whitespace-nowrap" style={{color: 'var(--color-text-secondary)'}}>
+                      {slot.middleText}
+                    </span>
                   </div>
+                  
+                  <button
+                    onClick={() => handleSlotAction(slot)}
+                    disabled={slot.isDisabled}
+                    className={`px-4 py-1 rounded-full text-sm font-medium transition-opacity hover-opacity ${getButtonClasses(slot)}`}
+                    style={slot.buttonState === "join" ? {backgroundColor: 'var(--color-button)', color: 'var(--color-white)'} : {}}
+                  >
+                    {slot.buttonText}
+                  </button>
                   
                   {errors[slotKey] && (
                     <div className="text-red-500 text-xs mt-2">{errors[slotKey]}</div>
@@ -466,14 +456,14 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
             })}
           </div>
           
-          <p className="text-sm font-normal text-gray-500 text-center mt-6">Availability resets at 8PM each day</p>
-        </div>
+          <p className="text-sm font-normal text-center mt-6" style={{color: 'var(--color-text-secondary)'}}>Availability resets at 8PM each day</p>
+        </section>
 
         {/* Update Preferences Section */}
-        <div className="mt-8 mb-6">
+        <section className="mt-8 mb-6">
           <button
             onClick={() => router.push('/settings/preferences')}
-            className="w-full flex items-center justify-between py-2 bg-transparent hover:bg-gray-50 transition-colors rounded-lg"
+            className="w-full flex items-center justify-between py-3 bg-transparent hover:bg-gray-50 transition-opacity rounded-lg"
           >
             <div className="flex items-center space-x-3">
               <div className="w-6 h-6 flex items-center justify-center">
@@ -489,34 +479,32 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
                 />
               </div>
               <div className="text-left">
-                <p className="text-lg font-medium text-gray-900">Update Preferences</p>
-                <p className="text-sm font-normal text-gray-500 mt-0.5">Curious about new communities?</p>
+                <p className="text-lg font-medium" style={{color: 'var(--color-text-primary)'}}>Update Preferences</p>
+                <p className="text-sm font-normal mt-0.5" style={{color: 'var(--color-text-secondary)'}}>Curious about new communities?</p>
               </div>
             </div>
             <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
-        </div>
+        </section>
 
-      </div>
-
-      {/* Location Section */}
-      <div className="px-6 pb-6 flex flex-col">
+        {/* Location Section */}
+        <section className="mt-8">
           <div className="flex items-center space-x-2 mb-1">
-            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{color: 'var(--color-text-secondary)'}}>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
             <div>
-              <span className="text-lg font-medium text-gray-900">Approximate Area:</span>
-              <span className="text-lg text-gray-700 ml-1">{location?.name || 'Old Union'}</span>
+              <span className="text-lg font-medium" style={{color: 'var(--color-text-primary)'}}>Approximate Area:</span>
+              <span className="text-lg ml-1" style={{color: 'var(--color-text-primary)'}}>{location?.name || 'Old Union'}</span>
             </div>
           </div>
-          <p className="text-sm font-normal text-gray-500 mb-4">Exact spot is revealed 1hr before start</p>
+          <p className="text-sm font-normal mb-4" style={{color: 'var(--color-text-secondary)'}}>Exact spot is revealed 1hr before start</p>
           
           {/* Map Container */}
-          <div className="map-container relative w-full bg-gray-50 rounded-2xl overflow-hidden shadow-sm">
+          <div className="map-container relative w-full bg-gray-50 rounded-xl overflow-hidden border" style={{borderColor: 'var(--color-border)'}}>
             {location && !locationError ? (
               <>
                 {/* Google Maps Static Image */}
@@ -541,8 +529,8 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
                 
                 {/* Location Label */}
                 <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-                  <div className="bg-white px-[3vw] py-[0.5vh] min-px-2 min-py-1 rounded-full shadow-lg border border-gray-200">
-                    <span className="text-[2.8vw] min-text-xs max-text-sm font-medium text-gray-800">{location.name} at Stanford</span>
+                  <div className="bg-white px-[0.75rem] py-[0.25rem] rounded-full shadow-lg border" style={{borderColor: 'var(--color-border)'}}>
+                    <span className="text-sm font-medium" style={{color: 'var(--color-text-primary)'}}>{location.name} at Stanford</span>
                   </div>
                 </div>
               </>
@@ -552,7 +540,7 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
                 <div 
                   className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center"
                 >
-                  <div className="text-center text-gray-600">
+                  <div className="text-center" style={{color: 'var(--color-text-secondary)'}}>
                     <svg className="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -563,7 +551,8 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
               </>
             )}
           </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 }
