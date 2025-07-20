@@ -367,76 +367,66 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
 
   const getButtonClasses = (slot: TimeSlotWithUserStatus) => {
     if (slot.buttonState === "confirmed") {
-      return "bg-green-100 text-green-700 border border-green-300 font-medium";
+      return "bg-green-100 text-green-700 border border-green-300";
     }
     if (slot.buttonState === "feedback") {
-      return "bg-orange-100 text-orange-600 border border-orange-300 font-medium";
+      return "bg-orange-100 text-orange-600 border border-orange-300";
     }
     if (slot.buttonState === "past") {
-      return "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed font-medium";
+      return "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed";
     }
     if (slot.buttonState === "leave") {
-      return "bg-red-100 text-red-600 border border-red-300 font-medium";
+      return "bg-white text-red-600 border border-gray-200";
     }
-    return "text-white font-medium border-none transition-all duration-200 shadow-sm";
+    return "border border-gray-200";
   };
 
   return (
-    <div className="h-screen bg-gray-50 grid grid-rows-[minmax(100px,15vh)_1fr_minmax(140px,20vh)] overflow-hidden">
-      {/* Header Section - Grid row 1 */}
-      <div className="px-[6vw] flex flex-col justify-between py-4" style={{backgroundColor: '#0E2C54'}}>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[#152B5C] text-[3vw] min-text-xs max-text-sm font-light">
-              App Time:
-            </p>
-            <LiveClock 
-              initialTime={serverTime}
-              className="text-[#152B5C] text-[3vw] min-text-xs max-text-sm font-light"
-            />
-          </div>
-          <button 
-            onClick={() => {
-              router.push('/settings');
-            }}
-            className="p-[1vw] rounded-full hover:bg-white/10 transition-colors"
-            aria-label="Settings"
-          >
-            <svg className="w-[6vw] h-[6vw] min-w-[20px] max-w-[24px] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </button>
-        </div>
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+      {/* Header Section - Target: 8.75rem (140px) */}
+      <div className="h-[140px] px-6 flex flex-col justify-center relative" style={{backgroundColor: '#152B5C'}}>
+        <button 
+          onClick={() => {
+            router.push('/settings');
+          }}
+          className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+          style={{backgroundColor: '#1C3A7A'}}
+          aria-label="Settings"
+        >
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </button>
         
         <div className="text-center">
-          <h1 className={`${typography.page.title} text-white mb-[1vh]`}>Today&apos;s Circles</h1>
-          <p className={`${typography.component.small} text-gray-300`}>New conversations waiting to happen</p>
+          <h1 className="text-[2rem] font-bold text-white leading-tight">Today&apos;s Circles</h1>
+          <p className="text-base font-normal text-gray-300 mt-2">New conversations waiting to happen</p>
         </div>
       </div>
 
-      {/* Main Content - Grid row 2 (takes remaining space) */}
-      <div className="px-[6vw] flex flex-col min-h-0">
-        {/* Upcoming Times Section - Uses available space */}
-        <div className="py-4 flex flex-col min-h-0">
-          <h2 className={`${typography.section.title} text-gray-700 mb-3`}>Upcoming Times</h2>
+      {/* Main Content - Scrollable if needed */}
+      <div className="flex-1 px-6 overflow-y-auto">
+        {/* Upcoming Times Section */}
+        <div className="pt-6">
+          <h2 className="text-xl font-medium text-gray-900 mb-4">Upcoming Times</h2>
           
-          <div className="flex-1 grid grid-rows-3 gap-2 min-h-0">
+          <div className="space-y-4">
             {processedTimeSlots.map((slot, index) => {
               const slotKey = slot.timeSlot.time.toISOString();
               
               return (
                 <div 
                   key={index} 
-                  className="bg-[#f8f9fa] rounded-xl p-3 shadow-sm border border-gray-100"
+                  className="h-[72px] bg-white rounded-2xl px-6 flex items-center shadow-sm"
                   style={{
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
                   }}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="w-full flex items-center justify-between">
                     {/* Time - Left side */}
                     <div className="flex-1">
-                      <div className={`${typography.section.title} text-gray-900`}>
+                      <div className="text-[1.75rem] font-medium text-gray-900">
                         {(() => {
                           const hours = slot.timeSlot.time.getHours();
                           const minutes = slot.timeSlot.time.getMinutes();
@@ -450,7 +440,7 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
                     
                     {/* Dynamic middle text - Center area */}
                     <div className="flex-1 text-center">
-                      <p className={`${typography.component.small} text-gray-500 leading-tight font-medium`}>
+                      <p className="text-xs font-normal text-gray-500">
                         {slot.middleText}
                       </p>
                     </div>
@@ -460,17 +450,10 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
                       <button
                         onClick={() => handleSlotAction(slot)}
                         disabled={slot.isDisabled}
-                        className={`px-4 py-2 rounded-full ${typography.component.button} min-w-[70px] ${getButtonClasses(slot)}`}
-                        style={slot.buttonState === "join" ? {backgroundColor: '#0E2C54'} : {}}
+                        className={`w-[72px] h-9 rounded-full text-base font-medium flex items-center justify-center ${getButtonClasses(slot)}`}
+                        style={slot.buttonState === "join" ? {backgroundColor: '#152B5C', color: '#FFFFFF'} : {}}
                       >
-                        <div className="flex items-center justify-center space-x-1">
-                          <span>{slot.buttonText}</span>
-                          {(slot.buttonState === "confirmed" || slot.buttonState === "feedback") && (
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          )}
-                        </div>
+                        {slot.buttonText}
                       </button>
                     </div>
                   </div>
@@ -483,17 +466,17 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
             })}
           </div>
           
-          <p className="text-sm text-gray-500 text-center mt-4">Availability resets at 8PM each day</p>
+          <p className="text-sm font-normal text-gray-500 text-center mt-6">Availability resets at 8PM each day</p>
         </div>
 
         {/* Update Preferences Section */}
-        <div className="px-6 py-4">
+        <div className="mt-8 mb-6">
           <button
             onClick={() => router.push('/settings/preferences')}
-            className="w-full flex items-center justify-between p-4 bg-white rounded-lg shadow-sm border border-gray-100 hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center justify-between py-2 bg-transparent hover:bg-gray-50 transition-colors rounded-lg"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+              <div className="w-6 h-6 flex items-center justify-center">
                 {/* Brain icon to match curiosity theme */}
                 <Image
                   src="/Images/PNG/brain.png"
@@ -506,8 +489,8 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
                 />
               </div>
               <div className="text-left">
-                <p className="font-medium text-gray-900">Update Preferences</p>
-                <p className="text-sm text-gray-500">Curious about new communities?</p>
+                <p className="text-lg font-medium text-gray-900">Update Preferences</p>
+                <p className="text-sm font-normal text-gray-500 mt-0.5">Curious about new communities?</p>
               </div>
             </div>
             <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -518,22 +501,22 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
 
       </div>
 
-      {/* Location Section - Grid row 3 */}
-      <div className="px-[6vw] pb-4 flex flex-col">
-          <div className="flex items-center space-x-2 mb-2">
-            <svg className="w-[5vw] h-[5vw] min-w-[16px] max-w-[20px] text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {/* Location Section */}
+      <div className="px-6 pb-6 flex flex-col">
+          <div className="flex items-center space-x-2 mb-1">
+            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            <div className="text-[3.2vw] min-text-xs max-text-sm">
-              <span className="font-medium text-gray-900">Approximate Area:</span>
-              <span className="text-gray-700 ml-1">{location?.name || 'Old Union'}</span>
+            <div>
+              <span className="text-lg font-medium text-gray-900">Approximate Area:</span>
+              <span className="text-lg text-gray-700 ml-1">{location?.name || 'Old Union'}</span>
             </div>
           </div>
-          <p className="text-[2.8vw] min-text-xs max-text-sm text-gray-600 mb-3">Exact spot is revealed 1hr before start</p>
+          <p className="text-sm font-normal text-gray-500 mb-4">Exact spot is revealed 1hr before start</p>
           
           {/* Map Container */}
-          <div className="map-container relative w-full bg-gray-50 rounded-[4vw] max-rounded-2xl overflow-hidden shadow-sm">
+          <div className="map-container relative w-full bg-gray-50 rounded-2xl overflow-hidden shadow-sm">
             {location && !locationError ? (
               <>
                 {/* Google Maps Static Image */}

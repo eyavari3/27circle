@@ -116,10 +116,9 @@ a {
   .max-h-[48px] { max-height: 48px; }
 }
 
-/* Map container with fixed aspect ratio */
+/* Map container with exact height */
 .map-container {
-  aspect-ratio: 16/10; /* Wider, less tall ratio */
-  max-height: 140px; /* More compact for mobile */
+  height: 230px; /* 14.375rem - exact specification */
   overflow: hidden;
 }
 
