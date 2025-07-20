@@ -648,20 +648,117 @@ Creates realistic test data:
 - ✅ State transitions happen at correct times
 - ✅ No confusion about button meanings or actions
 
+### Critical Implementation Lessons & Pitfalls
+
+#### The Database Permission Architecture Trap
+**CRITICAL LESSON:** The most complex bug encountered was not a logic issue but a **database permission architecture split** that created a false debugging narrative.
+
+**The Problem:**
+- Server Actions (INSERT/DELETE) used `createServiceClient()` - always worked
+- Server Queries (SELECT) used `createClient()` with user auth - always failed due to RLS
+- This created a "permission paradox" where data could be written but not read
+- Button state logic was perfect, but appeared broken due to wrong input data
+
+**The Solution:**
+```typescript
+// WRONG: Mixed permission contexts
+const authClient = await createClient();        // For queries (FAILS)
+const serviceClient = await createServiceClient(); // For mutations (WORKS)
+
+// RIGHT: Consistent permission context  
+const serviceClient = await createServiceClient(); // For everything (WORKS)
+```
+
+**Prevention Strategies:**
+1. **Standardize database client usage** across reads and writes
+2. **Create diagnostic API endpoints** for permission testing
+3. **Add comprehensive database operation logging** to catch permission failures early
+4. **Test with RLS enabled/disabled scenarios** during development
+
+#### Time-Based Logic Debugging Complexity
+**LESSON:** Time-based features create multi-dimensional debugging challenges that require specialized approaches.
+
+**Debugging Framework Required:**
+- **APP_TIME_OFFSET system** for simulating different times
+- **Comprehensive state logging** showing input → processing → output
+- **Phase detection logging** (before deadline / during event / after event)
+- **Database state verification** at each time transition
+
+**Example Implementation:**
+```typescript
+// Essential debugging pattern for time-based logic
+console.log(`⏰ METHOD 7 DETAILED ANALYSIS for ${timeSlot.slot}:`, {
+  input: { isOnWaitlist, assignedCircleId, currentTime },
+  phases: { beforeDeadline, duringEvent, afterEvent },
+  pathTaken: beforeDeadline ? 'BEFORE_DEADLINE' : duringEvent ? 'DURING_EVENT' : 'AFTER_EVENT'
+});
+```
+
+#### Anonymous User System Architecture
+**LESSON:** Anonymous users require careful consideration of authentication contexts and data persistence.
+
+**Key Implementation Points:**
+- Use sessionStorage (not localStorage) for anonymous ID persistence
+- Implement merge functionality for anonymous → authenticated user transitions
+- Consider database constraints (foreign keys, RLS policies) for anonymous users
+- Plan for cleanup of expired anonymous data
+
+#### RLS Policy Granularity Issues
+**CRITICAL PITFALL:** RLS policies can have different permissions for different operations (SELECT vs INSERT vs DELETE), creating subtle permission splits.
+
+**Diagnostic Approach:**
+```typescript
+// Test all operation types separately
+const selectTest = await supabase.from('table').select('*');
+const insertTest = await supabase.from('table').insert({...});
+const deleteTest = await supabase.from('table').delete().eq('id', 'test');
+
+console.log('Permission Test Results:', {
+  select: !selectTest.error,
+  insert: !insertTest.error, 
+  delete: !deleteTest.error
+});
+```
+
+#### Infrastructure-First Debugging
+**LESSON:** Modern applications require infrastructure-level debugging tools, not just application-level logging.
+
+**Essential Diagnostic APIs:**
+```typescript
+// Create these endpoints for any complex app
+/api/debug-rls        // Database permission analysis
+/api/debug-time       // Time system validation  
+/api/debug-state      // Application state verification
+/api/force-fix-*      // Automated fixes for common issues
+```
+
 ### Future Considerations
 
 #### Post-MVP Scaling:
-- Re-enable RLS when scaling beyond 100 trusted users
-- Add more sophisticated caching for button state computation
-- Implement WebSocket for real-time updates instead of polling
-- Add analytics tracking for button interaction patterns
+- **Re-enable RLS carefully** - test all operation types (SELECT/INSERT/DELETE) 
+- **Implement user-specific RLS policies** instead of disabling completely
+- **Add database connection pooling** for performance
+- **Create comprehensive permission testing suite**
+- **Implement WebSocket for real-time updates** instead of polling
+- **Add analytics tracking** for button interaction patterns
 
 #### Maintenance:
-- Monitor database performance as user base grows
-- Add comprehensive logging for button state transitions
-- Create automated testing for time-based edge cases
-- Document operational procedures for data migrations
+- **Monitor database performance** as user base grows
+- **Maintain diagnostic API endpoints** for ongoing troubleshooting  
+- **Create automated testing** for time-based edge cases with APP_TIME_OFFSET
+- **Document operational procedures** for RLS policy management
+- **Implement database backup/restore** procedures for development
+- **Create permission audit logging** for security compliance
+
+#### Development Workflow:
+- **Always test with RLS enabled** during development
+- **Use service client sparingly** - prefer proper RLS policies in production
+- **Implement comprehensive logging** before implementing complex features
+- **Create time simulation tools** for any time-dependent features
+- **Test anonymous user flows** separately from authenticated flows
 
 ---
 
-This specification represents the MVP vision for 27 Circle. Build iteratively, validate with users, and maintain focus on fostering meaningful connections through simplicity and reliability. 
+This specification represents the MVP vision for 27 Circle, enhanced with critical implementation learnings. The database permission architecture lesson is particularly important - what appears to be application logic bugs may actually be infrastructure permission issues. Always diagnose the full stack before assuming UI logic problems.
+
+Build iteratively, validate with users, maintain comprehensive debugging capabilities, and focus on fostering meaningful connections through simplicity and reliability. 

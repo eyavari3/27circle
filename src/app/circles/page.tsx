@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { TimeSlotWithUserStatus, CircleData } from "@/lib/types";
 import { getCurrentPSTTime, getDisplayDate, createTimeSlots, getDayBoundaries, formatDeadlineTime } from "@/lib/time";
 import CirclesClient from "./CirclesClient";
 
 export default async function CirclesPage() {
   const supabase = await createClient();
+  const serviceSupabase = await createServiceClient();
   
   const { data: { user } } = await supabase.auth.getUser();
   
@@ -43,11 +44,21 @@ export default async function CirclesPage() {
   let circleData = null;
   
   if (user) {
-    const { data: wlData } = await supabase
+    // FORCE FIX: Use service client to bypass RLS issues
+    console.log(`🔧 ATTEMPTING SERVICE CLIENT QUERY for user ${user.id}`);
+    const { data: wlData, error: wlError } = await serviceSupabase
       .from("waitlist_entries")
       .select("*")
       .eq("user_id", user.id)
       .gte("time_slot", startOfDay.toISOString());
+    
+    console.log(`🗄️ SERVICE CLIENT WAITLIST QUERY for user ${user.id}:`, {
+      success: !wlError,
+      error: wlError?.message,
+      entriesFound: wlData?.length || 0,
+      entries: wlData
+    });
+    
     waitlistEntries = wlData;
     
     const { data: cData } = await supabase

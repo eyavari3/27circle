@@ -7,6 +7,7 @@ import { FEEDBACK_ENABLED, UPDATE_INTERVAL } from "@/lib/constants";
 import { typography } from "@/lib/typography";
 import { getFeedbackRecord } from "@/lib/feedback-keys";
 import { getCurrentUserId, isAnonymousId } from "@/lib/anonymous-user";
+import { debugLogger } from "@/lib/debug-logger";
 
 import LiveClock from "@/components/ui/LiveClock";
 import { useFeedbackCheck } from "@/lib/hooks/useFeedbackCheck";
@@ -196,6 +197,15 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
         }
       }
 
+      // DEBUG: Log button state computation for each slot
+      console.log(`🔍 BUTTON STATE DEBUG for ${timeSlot.slot}:`, {
+        currentTime: currentTime.toLocaleTimeString(),
+        deadline: timeSlot.deadline.toLocaleTimeString(),
+        isOnWaitlist: slot.isOnWaitlist,
+        originalAssignedCircleId: slot.assignedCircleId,
+        deadlinePassed: currentTime >= timeSlot.deadline
+      });
+
       // Simulate assignedCircleId for development (only if user is on waitlist AND deadline has passed)
       let assignedCircleId = slot.assignedCircleId;
       if (!assignedCircleId && slot.isOnWaitlist && currentTime >= timeSlot.deadline) {
@@ -205,7 +215,15 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
         const hour = slot.timeSlot.time.getHours();
         const timeSlotStr = hour === 11 ? '11AM' : hour === 14 ? '2PM' : '5PM';
         assignedCircleId = `${dateStr}_${timeSlotStr}_Circle_1`;
+        console.log(`✅ SIMULATED CIRCLE ASSIGNMENT for ${timeSlotStr}:`, assignedCircleId);
       }
+
+      console.log(`📋 METHOD 7 INPUT for ${timeSlot.slot}:`, {
+        timeSlot: timeSlot.slot,
+        isOnWaitlist: slot.isOnWaitlist,
+        assignedCircleId,
+        feedbackSubmitted
+      });
 
       // Use Method 7 unified button state function
       const buttonStateResult = getButtonState(
@@ -217,6 +235,13 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
         currentTime,
         feedbackSubmitted
       );
+
+      console.log(`🎯 METHOD 7 OUTPUT for ${timeSlot.slot}:`, {
+        buttonState: buttonStateResult.buttonState,
+        buttonText: buttonStateResult.buttonText,
+        middleText: buttonStateResult.middleText,
+        isDisabled: buttonStateResult.isDisabled
+      });
 
       return {
         ...slot,
@@ -230,7 +255,10 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
   }, [timeSlots, isLoaded, justReset, currentTime]);
 
   const handleSlotAction = async (slot: TimeSlotWithUserStatus) => {
+    debugLogger.logSection("BUTTON CLICK HANDLER START");
+    
     if (slot.buttonState === "confirmed") {
+      debugLogger.logButtonClick('navigate-to-circle', slot.timeSlot.time.toISOString(), currentUserId);
       // In development mode, use a simulated circle ID
       const date = new Date(slot.timeSlot.time);
       const dateStr = date.toISOString().split('T')[0];
@@ -242,6 +270,7 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
     }
 
     if (slot.buttonState === "feedback") {
+      debugLogger.logButtonClick('navigate-to-feedback', slot.timeSlot.time.toISOString(), currentUserId);
       // Navigate to feedback page with actual circle ID
       const date = new Date(slot.timeSlot.time);
       const dateStr = date.toISOString().split('T')[0];
@@ -254,11 +283,15 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
 
     if (slot.buttonState === "join" || slot.buttonState === "leave") {
       const slotKey = slot.timeSlot.time.toISOString();
+      const isJoining = slot.buttonState === "join";
+      
+      debugLogger.logButtonClick(isJoining ? 'join' : 'leave', slotKey, currentUserId);
+      debugLogger.logAnonymousUserInfo(currentUserId, typeof window !== 'undefined' ? sessionStorage.getItem('anonUserId') : 'N/A');
+      
       setErrors(prev => ({ ...prev, [slotKey]: "" }));
 
-      const isJoining = slot.buttonState === "join";
-
       // Instant optimistic update
+      debugLogger.logOptimisticUpdate(slotKey, isJoining);
       setTimeSlots(prev => {
         const updated = prev.map(s => {
           if (s.timeSlot.time.toISOString() === slotKey) {
@@ -270,16 +303,25 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
           return s;
         });
 
-        // Database persistence handled by server actions
-
+        debugLogger.logStateRefresh('optimistic-update', updated);
         return updated;
       });
 
       // Background server action (no loading UI)
+      debugLogger.logServerAction(isJoining ? 'joinWaitlist' : 'leaveWaitlist', {
+        timeSlot: slotKey,
+        userId: currentUserId
+      });
+      
       try {
         const result = isJoining 
           ? await joinWaitlist(slot.timeSlot.time.toISOString(), currentUserId)
           : await leaveWaitlist(slot.timeSlot.time.toISOString(), currentUserId);
+
+        debugLogger.logDatabaseOperation(isJoining ? 'joinWaitlist' : 'leaveWaitlist', {
+          timeSlot: slotKey,
+          userId: currentUserId
+        }, result);
 
         if (result.error) {
           // Revert optimistic update on error
@@ -342,7 +384,7 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header Section - ~20% of viewport */}
-      <div className="h-[20vh] min-h-[140px] max-h-[180px] px-[6vw] flex flex-col justify-between py-[3vh]" style={{backgroundColor: '#0E2C54'}}>
+      <div className="h-[20vh] min-h-[120px] max-h-[160px] px-[6vw] flex flex-col justify-between py-4" style={{backgroundColor: '#0E2C54'}}>
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[#152B5C] text-[3vw] min-text-xs max-text-sm font-light">
@@ -376,20 +418,19 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
       {/* Main Content - Flex grow to fill remaining space */}
       <div className="flex-1 flex flex-col px-[6vw]">
         {/* Upcoming Times Section - ~50% of viewport */}
-        <div className="h-[50vh] min-h-[300px] py-[3vh] flex flex-col">
-          <h2 className={`${typography.section.title} text-gray-700 mb-[2vh]`}>Upcoming Times</h2>
+        <div className="h-[50vh] min-h-[300px] py-4 flex flex-col">
+          <h2 className={`${typography.section.title} text-gray-700 mb-3`}>Upcoming Times</h2>
           
-          <div className="flex-1 flex flex-col justify-start space-y-3">
+          <div className="flex-1 flex flex-col justify-start space-y-2">
             {processedTimeSlots.map((slot, index) => {
               const slotKey = slot.timeSlot.time.toISOString();
               
               return (
                 <div 
                   key={index} 
-                  className="bg-[#f8f9fa] rounded-xl p-4 shadow-sm border border-gray-100"
+                  className="bg-[#f8f9fa] rounded-xl p-3 shadow-sm border border-gray-100"
                   style={{
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                    marginBottom: '12px'
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                   }}
                 >
                   <div className="flex items-center justify-between">
@@ -476,8 +517,8 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
         </div>
 
         {/* Location Section - ~25% of viewport */}
-        <div className="h-[25vh] min-h-[200px] pb-[3vh] flex flex-col">
-          <div className="flex items-center space-x-[1vw] mb-[1vh]">
+        <div className="h-[25vh] min-h-[160px] pb-4 flex flex-col">
+          <div className="flex items-center space-x-2 mb-2">
             <svg className="w-[5vw] h-[5vw] min-w-[16px] max-w-[20px] text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -487,7 +528,7 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
               <span className="text-gray-700 ml-1">{location?.name || 'Old Union'}</span>
             </div>
           </div>
-          <p className="text-[2.8vw] min-text-xs max-text-sm text-gray-600 mb-[1.5vh]">Exact spot is revealed 1hr before start</p>
+          <p className="text-[2.8vw] min-text-xs max-text-sm text-gray-600 mb-3">Exact spot is revealed 1hr before start</p>
           
           {/* Map Container */}
           <div className="map-container relative w-full bg-gray-50 rounded-[4vw] max-rounded-2xl overflow-hidden shadow-sm">

@@ -512,7 +512,28 @@ export function getButtonState(
   const time = currentTime || getCurrentPSTTime();
   const timeSlot = slot.timeSlot;
   
-  // Method 7: Use the three pure time functions to determine phase
+  // DEBUG: Log the three phase checks
+  const beforeDeadline = isBeforeDeadline(timeSlot, time);
+  const duringEvent = isDuringEvent(timeSlot, time);
+  const afterEvent = isAfterEvent(timeSlot, time);
+  
+  console.log(`⏰ METHOD 7 DETAILED ANALYSIS for ${timeSlot.slot}:`, {
+    input: {
+      isOnWaitlist: slot.isOnWaitlist,
+      assignedCircleId: slot.assignedCircleId,
+      feedbackSubmitted,
+      currentTime: time.toLocaleTimeString()
+    },
+    phases: {
+      beforeDeadline,
+      duringEvent,
+      afterEvent,
+      deadlineTime: timeSlot.deadline.toLocaleTimeString(),
+      eventTime: timeSlot.time.toLocaleTimeString()
+    },
+    pathTaken: beforeDeadline ? 'BEFORE_DEADLINE' : duringEvent ? 'DURING_EVENT' : 'AFTER_EVENT'
+  });
+  
   if (isBeforeDeadline(timeSlot, time)) {
     // RSVP Phase: Users can join or leave waitlist
     if (slot.isOnWaitlist) {

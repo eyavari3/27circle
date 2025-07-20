@@ -6,6 +6,9 @@ import { getCurrentPSTTime, parseTimeSlotString, isValidTimeSlot, createTimeSlot
 import { ensureUserProfile } from "./ensure-profile";
 
 export async function joinWaitlist(timeSlot: string, userId?: string): Promise<{ error: string | null }> {
+  console.log(`\n🔵 ============ JOIN WAITLIST SERVER ACTION START ============`);
+  console.log(`📥 INPUT PARAMETERS:`, { timeSlot, userId, hasUserId: !!userId });
+  
   try {
     // Get user ID from parameter or auth
     let effectiveUserId = userId;
@@ -60,25 +63,43 @@ export async function joinWaitlist(timeSlot: string, userId?: string): Promise<{
     return { error: "The deadline to join this circle has passed." };
   }
 
-    const { error } = await supabase
+    console.log(`🔄 ATTEMPTING DATABASE INSERT:`, {
+      user_id: effectiveUserId,
+      time_slot: timeSlot,
+      isAnonymous: effectiveUserId.startsWith('anon-')
+    });
+
+    const { error, data } = await supabase
     .from("waitlist_entries")
     .insert({
       user_id: effectiveUserId,
       time_slot: timeSlot
+    })
+    .select();
+
+    console.log(`📊 DATABASE INSERT RESULT:`, {
+      success: !error,
+      error: error?.message,
+      data,
+      insertedRecords: data?.length || 0
     });
 
   if (error && error.message) {
     if (error.message.includes("duplicate key value")) {
+      console.log(`✅ DUPLICATE KEY - USER ALREADY ON WAITLIST`);
       return { error: null };
     }
-    console.error("Error joining waitlist:", error.message);
+    console.error("❌ DATABASE ERROR joining waitlist:", error.message);
     return { error: "Could not join the waitlist. Please try again." };
   }
 
-  revalidatePath("/circles");
-  return { error: null };
+    console.log(`✅ JOIN WAITLIST SUCCESS - REVALIDATING PATH`);
+    revalidatePath("/circles");
+    console.log(`🔵 ============ JOIN WAITLIST SERVER ACTION END - SUCCESS ============\n`);
+    return { error: null };
   } catch (error) {
-    console.error('Unexpected error in joinWaitlist:', error);
+    console.error('❌ UNEXPECTED ERROR in joinWaitlist:', error);
+    console.log(`🔵 ============ JOIN WAITLIST SERVER ACTION END - ERROR ============\n`);
     return { error: "An unexpected error occurred. Please try again." };
   }
 }
