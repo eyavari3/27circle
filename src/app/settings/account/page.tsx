@@ -1,11 +1,15 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import AccountClient from './AccountClient';
+import { getUserProfile } from './actions';
 
 export default async function AccountPage() {
+  let userProfile = null;
+  
   // In development mode, skip auth check for easier testing
   if (process.env.NODE_ENV === 'development') {
-    // Skip auth check in dev mode
+    // Try to get profile data even in dev mode
+    userProfile = await getUserProfile();
   } else {
     const supabase = await createClient();
     
@@ -13,7 +17,10 @@ export default async function AccountPage() {
     if (!user) {
       redirect('/auth');
     }
+    
+    // Fetch user profile data
+    userProfile = await getUserProfile();
   }
 
-  return <AccountClient />;
+  return <AccountClient initialData={userProfile} />;
 }

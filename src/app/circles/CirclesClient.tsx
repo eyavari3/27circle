@@ -426,8 +426,12 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
                   <div className="flex items-center gap-4">
                     <span className="text-[1.125rem] font-medium whitespace-nowrap" style={{color: 'var(--color-text-primary)'}}>
                       {(() => {
-                        const hours = slot.timeSlot.time.getHours();
-                        const minutes = slot.timeSlot.time.getMinutes();
+                        // Add 5 minutes for display only
+                        const displayTime = new Date(slot.timeSlot.time);
+                        displayTime.setMinutes(displayTime.getMinutes() + 5);
+                        
+                        const hours = displayTime.getHours();
+                        const minutes = displayTime.getMinutes();
                         const period = hours >= 12 ? 'PM' : 'AM';
                         const displayHours = hours % 12 || 12;
                         const displayMinutes = minutes.toString().padStart(2, '0');

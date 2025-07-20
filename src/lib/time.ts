@@ -78,6 +78,7 @@ export interface TimeSlot {
 
 /**
  * Create the three daily time slots for a given date
+ * Always creates times in PST regardless of server timezone
  */
 export function createTimeSlots(displayDate?: Date): TimeSlot[] {
   const baseDate = displayDate || getDisplayDate();
@@ -85,22 +86,29 @@ export function createTimeSlots(displayDate?: Date): TimeSlot[] {
   const month = baseDate.getMonth();
   const date = baseDate.getDate();
   
+  // Create PST dates by parsing them as PST strings
+  const createPSTDate = (hour: number, minute: number = 0) => {
+    const pstString = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')} ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
+    // Parse as PST time
+    return new Date(new Date(pstString + ' PST').toLocaleString('en-US', { timeZone: 'UTC' }));
+  };
+  
   return [
     {
-      time: new Date(year, month, date, 11, 0, 0, 0),
-      deadline: new Date(year, month, date, 10, 0, 0, 0),
+      time: createPSTDate(11, 0),
+      deadline: createPSTDate(10, 0),
       slot: '11AM',
       hour: 11
     },
     {
-      time: new Date(year, month, date, 14, 0, 0, 0),
-      deadline: new Date(year, month, date, 13, 0, 0, 0),
+      time: createPSTDate(14, 0),
+      deadline: createPSTDate(13, 0),
       slot: '2PM',
       hour: 14
     },
     {
-      time: new Date(year, month, date, 17, 0, 0, 0),
-      deadline: new Date(year, month, date, 16, 0, 0, 0),
+      time: createPSTDate(17, 0),
+      deadline: createPSTDate(16, 0),
       slot: '5PM',
       hour: 17
     }

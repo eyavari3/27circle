@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatPhoneNumber } from '@/lib/utils/phoneFormatter';
+import { updateUserProfile, signOutUser } from './actions';
 
 interface AccountData {
   fullName: string;
@@ -12,7 +13,11 @@ interface AccountData {
   phoneNumber?: string;
 }
 
-export default function AccountClient() {
+interface AccountClientProps {
+  initialData: AccountData | null;
+}
+
+export default function AccountClient({ initialData }: AccountClientProps) {
   const router = useRouter();
   const [accountData, setAccountData] = useState<AccountData>({
     fullName: '',
@@ -29,7 +34,12 @@ export default function AccountClient() {
 
   // Load saved account data on mount
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
+    // First priority: use initial data from database
+    if (initialData) {
+      setAccountData(initialData);
+    } 
+    // Fallback: check localStorage in development
+    else if (process.env.NODE_ENV === 'development') {
       const saved = localStorage.getItem('dev-user-account');
       if (saved) {
         try {
@@ -39,7 +49,7 @@ export default function AccountClient() {
         }
       }
     }
-  }, []);
+  }, [initialData]);
 
   const handleInputChange = (field: keyof AccountData, value: string) => {
     if (field === 'phoneNumber') {
@@ -55,13 +65,20 @@ export default function AccountClient() {
     setIsSaving(true);
     
     try {
+      // Save to database
+      const result = await updateUserProfile(accountData);
+      
+      if (result.error) {
+        console.error('Error saving profile:', result.error);
+        // In production, show error to user
+        return;
+      }
+      
+      // Also save to localStorage for development
       if (process.env.NODE_ENV === 'development') {
         localStorage.setItem('dev-user-account', JSON.stringify(accountData));
         console.log('✅ Account data saved:', accountData);
       }
-      
-      // In production, this would save to the database
-      // await saveUserAccount(accountData);
       
       // Small delay for UX
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -74,13 +91,22 @@ export default function AccountClient() {
     }
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
+    // Clear localStorage
     if (process.env.NODE_ENV === 'development') {
       localStorage.clear();
-      router.push('/');
     }
-    // In production, this would trigger account deletion flow
+    
+    // Sign out user (this will redirect to home page)
+    await signOutUser();
   };
+
+  // Check if form is valid (all required fields filled)
+  const isFormValid = Boolean(
+    accountData.fullName.trim() && 
+    accountData.gender && 
+    accountData.dateOfBirth
+  );
 
   return (
     <div className="min-h-screen bg-white">
@@ -201,11 +227,13 @@ export default function AccountClient() {
         <div className="pt-4">
           <button
             onClick={handleSave}
-            disabled={isSaving}
+            disabled={isSaving || !isFormValid}
             className={`w-full py-4 rounded-full font-medium text-white transition-all ${
               isSaving
                 ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-gray-300 hover:bg-gray-400'
+                : isFormValid
+                ? 'bg-[#0E2C54] hover:bg-[#152B5C]'
+                : 'bg-gray-300 cursor-not-allowed'
             }`}
           >
             {isSaving ? 'Saving...' : 'Save'}
