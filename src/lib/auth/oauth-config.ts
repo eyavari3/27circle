@@ -13,7 +13,12 @@ export interface OAuthConfig {
  * Get the appropriate OAuth redirect URI based on environment
  */
 function getOAuthRedirectURI(): string {
-  // Production/Staging: Use environment variable or infer from host
+  // Client-side: Always use current window location for accuracy
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}/auth/callback`;
+  }
+  
+  // Server-side fallbacks
   if (process.env.NODE_ENV === 'production') {
     // First try explicit production URL
     if (process.env.NEXT_PUBLIC_SITE_URL) {
@@ -27,12 +32,6 @@ function getOAuthRedirectURI(): string {
     
     // Last resort - this should be configured properly
     throw new Error('Production OAuth redirect URI not configured. Set NEXT_PUBLIC_SITE_URL environment variable.');
-  }
-  
-  // Development: Handle dynamic ports and local development
-  if (typeof window !== 'undefined') {
-    // Client-side: Use current window location
-    return `${window.location.origin}/auth/callback`;
   }
   
   // Server-side development: Use localhost with default port
