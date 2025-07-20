@@ -66,6 +66,23 @@ a {
 }
 
 /* Responsive text size utilities */
+/* CSS Grid Layout Support for Mobile */
+@supports (display: grid) {
+  .grid-mobile-layout {
+    display: grid;
+    grid-template-rows: minmax(100px, 15vh) 1fr minmax(140px, 20vh);
+    height: 100vh;
+    height: 100dvh;
+  }
+}
+
+/* Fallback for browsers without dvh support */
+@supports not (height: 100dvh) {
+  .grid-mobile-layout {
+    height: 100vh;
+  }
+}
+
 @layer utilities {
   .min-text-xs { font-size: max(0.75rem, 1em); }
   .min-text-sm { font-size: max(0.875rem, 1em); }
@@ -101,8 +118,8 @@ a {
 
 /* Map container with fixed aspect ratio */
 .map-container {
-  aspect-ratio: 4/3; /* Compact ratio, not widescreen */
-  max-height: 200px; /* Limit height for mobile */
+  aspect-ratio: 16/10; /* Wider, less tall ratio */
+  max-height: 140px; /* More compact for mobile */
   overflow: hidden;
 }
 

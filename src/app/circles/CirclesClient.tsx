@@ -382,9 +382,9 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header Section - ~20% of viewport */}
-      <div className="h-[20vh] min-h-[120px] max-h-[160px] px-[6vw] flex flex-col justify-between py-4" style={{backgroundColor: '#0E2C54'}}>
+    <div className="h-screen bg-gray-50 grid grid-rows-[minmax(100px,15vh)_1fr_minmax(140px,20vh)] overflow-hidden">
+      {/* Header Section - Grid row 1 */}
+      <div className="px-[6vw] flex flex-col justify-between py-4" style={{backgroundColor: '#0E2C54'}}>
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[#152B5C] text-[3vw] min-text-xs max-text-sm font-light">
@@ -415,13 +415,13 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
         </div>
       </div>
 
-      {/* Main Content - Flex grow to fill remaining space */}
-      <div className="flex-1 flex flex-col px-[6vw]">
-        {/* Upcoming Times Section - ~50% of viewport */}
-        <div className="h-[50vh] min-h-[300px] py-4 flex flex-col">
+      {/* Main Content - Grid row 2 (takes remaining space) */}
+      <div className="px-[6vw] flex flex-col min-h-0">
+        {/* Upcoming Times Section - Uses available space */}
+        <div className="py-4 flex flex-col min-h-0">
           <h2 className={`${typography.section.title} text-gray-700 mb-3`}>Upcoming Times</h2>
           
-          <div className="flex-1 flex flex-col justify-start space-y-2">
+          <div className="flex-1 grid grid-rows-3 gap-2 min-h-0">
             {processedTimeSlots.map((slot, index) => {
               const slotKey = slot.timeSlot.time.toISOString();
               
@@ -516,8 +516,10 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
           </button>
         </div>
 
-        {/* Location Section - ~25% of viewport */}
-        <div className="h-[25vh] min-h-[160px] pb-4 flex flex-col">
+      </div>
+
+      {/* Location Section - Grid row 3 */}
+      <div className="px-[6vw] pb-4 flex flex-col">
           <div className="flex items-center space-x-2 mb-2">
             <svg className="w-[5vw] h-[5vw] min-w-[16px] max-w-[20px] text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -578,7 +580,6 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
               </>
             )}
           </div>
-        </div>
       </div>
     </div>
   );
