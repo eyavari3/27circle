@@ -46,35 +46,100 @@ export async function submitProfile(profileData: {
   dateOfBirth: string;
   location: string;
 }): Promise<{ error: string | null }> {
+  console.log('🔍 DEBUG: submitProfile called with:', { 
+    fullName: profileData.fullName,
+    gender: profileData.gender,
+    dateOfBirth: profileData.dateOfBirth 
+  });
+
   if (!profileData.fullName.trim() || !profileData.gender || !profileData.dateOfBirth) {
     return { error: 'Please fill in all required fields.' };
   }
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  
+  console.log('🔍 DEBUG: Auth user:', { 
+    userId: user?.id,
+    email: user?.email,
+    phone: user?.phone 
+  });
 
   // For development: Skip auth check and return success
   if (!user) {
+    console.log('🔍 DEBUG: No authenticated user, returning early');
     return { error: null };
   }
 
   // For test mode: Always use service role client to completely bypass RLS
   let targetSupabase = supabase;
+  let clientType = 'regular';
 
   if (isTestModeEnabled()) {
+    console.log('🔍 DEBUG: Test mode enabled, checking user type');
+    
     // Use service role client to check if this is a test user (bypasses any RLS issues)
     const serviceSupabase = await createServiceClient();
-    const { data: userData } = await serviceSupabase
+    const { data: userData, error: fetchError } = await serviceSupabase
       .from('users')
       .select('phone_number, is_test')
       .eq('id', user.id)
       .maybeSingle();
 
+    console.log('🔍 DEBUG: User lookup result:', { 
+      userData,
+      fetchError,
+      userExists: !!userData 
+    });
+
     if (userData?.is_test || (userData?.phone_number && isTestPhoneNumber(userData.phone_number))) {
+      console.log('🔍 DEBUG: Detected test user, switching to service client');
       targetSupabase = serviceSupabase; // Use service role for ALL test user operations
+      clientType = 'service';
     }
   }
 
+  // Check if user record exists before update
+  console.log('🔍 DEBUG: Checking if user record exists before update');
+  const { data: existingUser, error: checkError } = await targetSupabase
+    .from('users')
+    .select('id, full_name, phone_number')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  console.log('🔍 DEBUG: User record check:', {
+    clientType,
+    existingUser,
+    checkError,
+    recordExists: !!existingUser
+  });
+
+  // If no user record exists, we need to insert instead of update
+  if (!existingUser) {
+    console.log('🔍 DEBUG: No user record found, attempting INSERT instead of UPDATE');
+    const { error: insertError } = await targetSupabase
+      .from('users')
+      .insert({
+        id: user.id,
+        full_name: profileData.fullName,
+        gender: profileData.gender,
+        date_of_birth: profileData.dateOfBirth,
+        location: profileData.location,
+        phone_number: user.phone || null,
+      });
+
+    if (insertError) {
+      console.error('🔍 DEBUG: Insert error:', insertError);
+      return { error: 'Could not save your profile. Please try again.' };
+    }
+
+    console.log('🔍 DEBUG: Successfully inserted new user record');
+    revalidatePath('/circles');
+    return { error: null };
+  }
+
+  // User exists, proceed with update
+  console.log('🔍 DEBUG: Attempting UPDATE with client type:', clientType);
   const { error } = await targetSupabase
     .from('users')
     .update({
@@ -86,10 +151,17 @@ export async function submitProfile(profileData: {
     .eq('id', user.id);
 
   if (error) {
-    console.error('Error updating user profile:', error.message);
+    console.error('🔍 DEBUG: Update error details:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      clientType
+    });
     return { error: 'Could not save your profile. Please try again.' };
   }
 
+  console.log('🔍 DEBUG: Profile update successful');
   revalidatePath('/circles');
   return { error: null };
 }
