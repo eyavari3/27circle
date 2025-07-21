@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 // Enhanced error handling for OAuth callback
@@ -58,7 +58,9 @@ export async function GET(request: NextRequest) {
     console.log('🔍 User ID from Google OAuth:', user.id);
 
     // Check if user has completed onboarding by looking for profile data
-    const { data: profile, error: profileError } = await supabase
+    // Use service client to bypass RLS policies for this lookup
+    const serviceSupabase = await createServiceClient()
+    const { data: profile, error: profileError } = await serviceSupabase
       .from('users')
       .select('full_name, gender, date_of_birth')
       .eq('id', user.id)
