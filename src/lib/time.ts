@@ -87,15 +87,11 @@ export function createTimeSlots(displayDate?: Date): TimeSlot[] {
   const month = baseDate.getMonth();
   const date = baseDate.getDate();
   
-  // Create dates consistently for server/client hydration
+  // Create dates consistently for server/client hydration using UTC
   const createPSTDate = (hour: number, minute: number = 0) => {
-    // Start with current PST time to ensure proper timezone, then set specific time
-    const basePSTTime = getCurrentPSTTime();
-    const pstDate = new Date(basePSTTime);
-    // Set to the target date and specific hour/minute
-    pstDate.setFullYear(year, month, date);
-    pstDate.setHours(hour, minute, 0, 0);
-    return pstDate;
+    // Create UTC date, then adjust for PST (UTC-8)
+    const utcDate = new Date(Date.UTC(year, month, date, hour + 8, minute, 0, 0));
+    return utcDate;
   };
   
   return [
