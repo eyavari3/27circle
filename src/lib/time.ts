@@ -19,7 +19,7 @@ export function getCurrentPSTTime(): Date {
   const now = new Date();
   // Use the original toLocaleString approach but parse it correctly
   const pstString = now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" });
-  const pstTime = new Date(pstString);
+  let pstTime = new Date(pstString);
   
   // Apply APP_TIME_OFFSET if set for testing
   const timeOffset = getAppTimeOffset();
@@ -91,11 +91,9 @@ export function createTimeSlots(displayDate?: Date): TimeSlot[] {
   
   // Create dates consistently for server/client hydration
   const createPSTDate = (hour: number, minute: number = 0) => {
-    // Create date explicitly in PST timezone to avoid server/client hydration mismatch
-    // Use toLocaleString to create a PST date string, then parse it back to Date
-    const pstDateString = new Date(year, month, date, hour, minute, 0, 0)
-      .toLocaleString("en-US", { timeZone: "America/Los_Angeles" });
-    return new Date(pstDateString);
+    // Create local date that matches timezone expectations
+    const localDate = new Date(year, month, date, hour, minute, 0, 0);
+    return localDate;
   };
   
   return [
