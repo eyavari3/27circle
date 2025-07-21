@@ -91,9 +91,9 @@ export function createTimeSlots(displayDate?: Date): TimeSlot[] {
   
   // Create dates consistently for server/client hydration
   const createPSTDate = (hour: number, minute: number = 0) => {
-    // Create UTC date, then adjust for PST (UTC-7 for correct display)
-    const utcDate = new Date(Date.UTC(year, month, date, hour + 7, minute, 0, 0));
-    return utcDate;
+    // Create local date that matches timezone expectations
+    const localDate = new Date(year, month, date, hour, minute, 0, 0);
+    return localDate;
   };
   
   return [
