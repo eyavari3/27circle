@@ -12,8 +12,20 @@ import { getAppTimeOffset } from './constants';
 // =============================================================================
 
 /**
+ * Get the real PST time without any simulation or offset
+ * Used for creating fixed time slots that should never change
+ */
+export function getRealPSTTime(): Date {
+  const now = new Date();
+  // Create timezone-agnostic PST time to avoid server/client hydration issues
+  const utcTime = now.getTime();
+  const pstOffset = -8 * 60 * 60 * 1000; // PST is UTC-8 (milliseconds)
+  return new Date(utcTime + pstOffset);
+}
+
+/**
  * Get the current PST time with APP_TIME_OFFSET simulation
- * This is the ONLY function that should be used to get current time
+ * This is used for app time display and deadline checking
  */
 export function getCurrentPSTTime(): Date {
   const now = new Date();
@@ -81,19 +93,43 @@ export interface TimeSlot {
 
 /**
  * Create the three daily time slots for a given date
- * Always creates times in PST regardless of server timezone
+ * Uses Real PST time to avoid hydration mismatches and maintain fixed slot times
  */
 export function createTimeSlots(displayDate?: Date): TimeSlot[] {
-  const baseDate = displayDate || getDisplayDate();
+  // Use Real PST for determining the base date, not adjustable app time
+  const realPST = getRealPSTTime();
+  let baseDate: Date;
+  
+  if (displayDate) {
+    baseDate = displayDate;
+  } else {
+    // After 8PM PST, show next day's slots (using real PST time)
+    baseDate = new Date(realPST);
+    if (realPST.getHours() >= 20) {
+      baseDate.setDate(baseDate.getDate() + 1);
+    }
+    baseDate.setHours(0, 0, 0, 0);
+  }
+  
   const year = baseDate.getFullYear();
   const month = baseDate.getMonth();
   const date = baseDate.getDate();
   
-  // Create dates consistently for server/client hydration
+  // Create consistent PST dates using timezone conversion
   const createPSTDate = (hour: number, minute: number = 0) => {
-    // Create local date that matches timezone expectations
-    const localDate = new Date(year, month, date, hour, minute, 0, 0);
-    return localDate;
+    // Create a date string in PST format and let JavaScript parse it
+    const dateStr = `${month + 1}/${date}/${year} ${hour}:${minute.toString().padStart(2, '0')}:00`;
+    const pstDate = new Date(dateStr + ' PST');
+    
+    // Fallback: if PST parsing fails, use UTC calculation
+    if (isNaN(pstDate.getTime())) {
+      // PDT is UTC-7, PST is UTC-8. For simplicity, assume PDT (current July)
+      const utcHour = hour + 7;
+      const dayOffset = utcHour >= 24 ? 1 : 0;
+      return new Date(Date.UTC(year, month, date + dayOffset, utcHour % 24, minute, 0, 0));
+    }
+    
+    return pstDate;
   };
   
   return [
