@@ -17,9 +17,9 @@ import { getAppTimeOffset } from './constants';
  */
 export function getCurrentPSTTime(): Date {
   const now = new Date();
-  // Get PST offset (PST is UTC-8, PDT is UTC-7)
-  const pstOffset = -8 * 60; // PST is UTC-8 (in minutes)
-  let pstTime = new Date(now.getTime() + (pstOffset * 60 * 1000));
+  // Use the original toLocaleString approach but parse it correctly
+  const pstString = now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" });
+  let pstTime = new Date(pstString);
   
   // Apply APP_TIME_OFFSET if set for testing
   const timeOffset = getAppTimeOffset();
