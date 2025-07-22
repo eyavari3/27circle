@@ -110,7 +110,7 @@ export function useCurrentTime(initialTime?: Date) {
       }
       return new Date();
     }
-  }, [isDebug]);
+  }, []); // Remove isDebug dependency to prevent unnecessary re-renders
 
   const rafRef = useRef<number | null>(null);
   const resyncTimerRef = useRef<NodeJS.Timeout | null>(null);
