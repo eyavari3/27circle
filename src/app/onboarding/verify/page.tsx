@@ -8,7 +8,6 @@ export default function VerifyPage() {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const supabase = createClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +25,7 @@ export default function VerifyPage() {
       setLoading(false);
       return;
     }
+    const supabase = createClient();
     const { error: verifyError } = await supabase.auth.verifyOtp({
       phone,
       token: code,
