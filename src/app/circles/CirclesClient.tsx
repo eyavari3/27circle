@@ -63,19 +63,10 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
     // Then update on interval
     const intervalId = setInterval(updateTime, UPDATE_INTERVAL);
     
-    // Fallback: Force update every minute if tab becomes active
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        updateTime();
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
     
     // Cleanup
     return () => {
       clearInterval(intervalId);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [getNow]);
   
