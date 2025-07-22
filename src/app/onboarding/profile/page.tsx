@@ -18,65 +18,50 @@ export default function ProfilePage() {
 
   // Load existing account data and handle onboarding state
   useEffect(() => {
-    try {
-      // Mark that auth has been completed
-      setAuthCompleted();
-      
-      // Handle curiosity selections from onboarding state
-      const onboardingState = getOnboardingState();
-      if (onboardingState.isInOnboarding && onboardingState.curiositySelections.length > 0) {
-        // Merge onboarding selections with any existing preferences
-        if (process.env.NODE_ENV === 'development') {
+    async function initializeProfile() {
+      try {
+        // Mark that auth has been completed
+        await setAuthCompleted();
+        
+        // Handle curiosity selections from onboarding state
+        const onboardingState = await getOnboardingState();
+        if (onboardingState.isInOnboarding && onboardingState.curiositySelections.length > 0) {
+          // Merge onboarding selections with any existing preferences using Storage utility
           try {
-            const existingSaved = localStorage.getItem('dev-user-preferences');
-            let allPreferences = [...onboardingState.curiositySelections];
+            const { Storage } = await import('@/lib/storage');
+            const existingSaved = await Storage.get<string[]>('dev-user-preferences', []);
             
-            if (existingSaved) {
-              try {
-                const existing = JSON.parse(existingSaved);
-                // Merge arrays and remove duplicates
-                allPreferences = [...new Set([...existing, ...onboardingState.curiositySelections])];
-              } catch (e) {
-                console.error('Error merging existing preferences:', e);
-                // Fallback to just onboarding selections
-                allPreferences = [...onboardingState.curiositySelections];
-              }
-            }
+            // Merge arrays and remove duplicates
+            const allPreferences = [...new Set([...(existingSaved || []), ...onboardingState.curiositySelections])];
             
-            localStorage.setItem('dev-user-preferences', JSON.stringify(allPreferences));
-            console.log('✅ Merged onboarding curiosity selections:', allPreferences);
+            await Storage.set('dev-user-preferences', allPreferences);
+            console.log('✅ Merged onboarding curiosity selections to storage:', allPreferences);
           } catch (storageError) {
-            console.error('Error saving merged preferences to localStorage:', storageError);
-            // Continue without localStorage - not critical for app function
+            console.error('Error saving merged preferences to storage:', storageError);
+            // Continue without storage - not critical for app function
           }
+        } else if (onboardingState.isInOnboarding) {
+          console.warn('⚠️ User in onboarding flow but no curiosity selections found');
         }
-      } else if (onboardingState.isInOnboarding) {
-        console.warn('⚠️ User in onboarding flow but no curiosity selections found');
-      }
-      
-      // Load existing account data if available (for consistency with settings)
-      if (process.env.NODE_ENV === 'development') {
+        
+        // Load existing account data if available using Storage utility
         try {
-          const saved = localStorage.getItem('dev-user-account');
-          if (saved) {
-            try {
-              const accountData = JSON.parse(saved);
-              setFormData(accountData);
-              console.log('📋 Loaded existing account data in onboarding:', accountData);
-            } catch (parseError) {
-              console.error('Error parsing account data:', parseError);
-              // Clear corrupted data
-              localStorage.removeItem('dev-user-account');
-            }
+          const { Storage } = await import('@/lib/storage');
+          const accountData = await Storage.get<typeof formData>('dev-user-account', null);
+          if (accountData) {
+            setFormData(accountData);
+            console.log('📋 Loaded existing account data from storage:', accountData);
           }
         } catch (storageError) {
-          console.error('Error accessing localStorage for account data:', storageError);
+          console.error('Error accessing storage for account data:', storageError);
         }
+      } catch (error) {
+        console.error('Error in profile page initialization:', error);
+        // Don't block the UI, just log the error
       }
-    } catch (error) {
-      console.error('Error in profile page initialization:', error);
-      // Don't block the UI, just log the error
     }
+    
+    initializeProfile();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -114,10 +99,14 @@ export default function ProfilePage() {
     }
 
     try {
-      // Save to localStorage in development mode for consistency with settings
-      if (process.env.NODE_ENV === 'development') {
-        localStorage.setItem('dev-user-account', JSON.stringify(formData));
-        console.log('✅ Onboarding profile saved to localStorage:', formData);
+      // Save to Storage utility for dev/prod parity
+      try {
+        const { Storage } = await import('@/lib/storage');
+        await Storage.set('dev-user-account', formData);
+        console.log('✅ Onboarding profile saved to storage:', formData);
+      } catch (storageError) {
+        console.error('Error saving profile to storage:', storageError);
+        // Continue - storage failure is not critical for profile submission
       }
       
       const result = await submitProfile(formData);
@@ -126,7 +115,7 @@ export default function ProfilePage() {
       } else {
         try {
           // Complete onboarding and clean up state
-          completeOnboarding();
+          await completeOnboarding();
         } catch (cleanupError) {
           console.error('Error cleaning up onboarding state:', cleanupError);
           // Don't block navigation - cleanup failure is not critical

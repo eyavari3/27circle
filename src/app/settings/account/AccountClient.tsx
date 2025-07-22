@@ -34,21 +34,25 @@ export default function AccountClient({ initialData }: AccountClientProps) {
 
   // Load saved account data on mount
   useEffect(() => {
-    // First priority: use initial data from database
-    if (initialData) {
-      setAccountData(initialData);
-    } 
-    // Fallback: check localStorage in development
-    else if (process.env.NODE_ENV === 'development') {
-      const saved = localStorage.getItem('dev-user-account');
-      if (saved) {
+    async function loadAccountData() {
+      // First priority: use initial data from database
+      if (initialData) {
+        setAccountData(initialData);
+      } else {
+        // Fallback: check Storage utility
         try {
-          setAccountData(JSON.parse(saved));
+          const { Storage } = await import('@/lib/storage');
+          const saved = await Storage.get<AccountData>('dev-user-account', null);
+          if (saved) {
+            setAccountData(saved);
+          }
         } catch (e) {
-          console.error('Error loading account data:', e);
+          console.error('Error loading account data from storage:', e);
         }
       }
     }
+    
+    loadAccountData();
   }, [initialData]);
 
   const handleInputChange = (field: keyof AccountData, value: string) => {
@@ -74,10 +78,14 @@ export default function AccountClient({ initialData }: AccountClientProps) {
         return;
       }
       
-      // Also save to localStorage for development
-      if (process.env.NODE_ENV === 'development') {
-        localStorage.setItem('dev-user-account', JSON.stringify(accountData));
-        console.log('✅ Account data saved:', accountData);
+      // Also save to Storage utility for dev/prod parity
+      try {
+        const { Storage } = await import('@/lib/storage');
+        await Storage.set('dev-user-account', accountData);
+        console.log('✅ Account data saved to storage:', accountData);
+      } catch (storageError) {
+        console.error('Error saving account to storage:', storageError);
+        // Continue - storage failure is not critical for profile update
       }
       
       // Small delay for UX
@@ -92,9 +100,13 @@ export default function AccountClient({ initialData }: AccountClientProps) {
   };
 
   const handleDeleteAccount = async () => {
-    // Clear localStorage
-    if (process.env.NODE_ENV === 'development') {
-      localStorage.clear();
+    // Clear Storage utility data
+    try {
+      const { Storage } = await import('@/lib/storage');
+      await Storage.clear();
+      console.log('🗑️ All storage data cleared');
+    } catch (error) {
+      console.error('Error clearing storage data:', error);
     }
     
     // Sign out user (this will redirect to home page)

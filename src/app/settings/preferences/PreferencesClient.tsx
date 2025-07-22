@@ -55,19 +55,24 @@ export default function PreferencesClient({ initialData }: PreferencesClientProp
 
   // Load saved preferences on mount
   useEffect(() => {
-    // Use initialData from database first, then fallback to localStorage in dev
-    if (initialData && initialData.length > 0) {
-      setSelectedPreferences(initialData);
-    } else if (process.env.NODE_ENV === 'development') {
-      const saved = localStorage.getItem('dev-user-preferences');
-      if (saved) {
+    async function loadPreferences() {
+      // Use initialData from database first, then fallback to Storage utility
+      if (initialData && initialData.length > 0) {
+        setSelectedPreferences(initialData);
+      } else {
         try {
-          setSelectedPreferences(JSON.parse(saved));
+          const { Storage } = await import('@/lib/storage');
+          const saved = await Storage.get<string[]>('dev-user-preferences', []);
+          if (saved && saved.length > 0) {
+            setSelectedPreferences(saved);
+          }
         } catch (e) {
-          console.error('Error loading preferences:', e);
+          console.error('Error loading preferences from storage:', e);
         }
       }
     }
+    
+    loadPreferences();
   }, [initialData]);
 
   const togglePreference = (key: string) => {
@@ -91,10 +96,13 @@ export default function PreferencesClient({ initialData }: PreferencesClientProp
         return;
       }
       
-      // Also save to localStorage in dev mode for testing
-      if (process.env.NODE_ENV === 'development') {
-        localStorage.setItem('dev-user-preferences', JSON.stringify(selectedPreferences));
-        console.log('✅ Preferences saved:', selectedPreferences);
+      // Also save to Storage utility for dev/prod parity
+      try {
+        const { Storage } = await import('@/lib/storage');
+        await Storage.set('dev-user-preferences', selectedPreferences);
+        console.log('✅ Preferences saved to storage:', selectedPreferences);
+      } catch (error) {
+        console.error('Error saving preferences to storage:', error);
       }
       
       // Small delay for UX

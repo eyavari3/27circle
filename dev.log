@@ -1,0 +1,637 @@
+
+> 27circle-july@0.1.0 dev
+> next dev
+
+ ⚠ Port 3000 is in use, using available port 3002 instead.
+   ▲ Next.js 15.3.5
+   - Local:        http://localhost:3002
+   - Network:      http://172.16.101.198:3002
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1504ms
+ ○ Compiling /api/test-timezone ...
+ ⚠ ./src/lib/time.ts
+Attempted import error: 'zonedTimeToUtc' is not exported from 'date-fns-tz' (imported as 'zonedTimeToUtc').
+
+Import trace for requested module:
+./src/lib/time.ts
+./src/app/api/test-timezone/route.ts
+
+./src/lib/time.ts
+Attempted import error: 'utcToZonedTime' is not exported from 'date-fns-tz' (imported as 'utcToZonedTime').
+
+Import trace for requested module:
+./src/lib/time.ts
+./src/app/api/test-timezone/route.ts
+
+./src/lib/time.ts
+Attempted import error: 'zonedTimeToUtc' is not exported from 'date-fns-tz' (imported as 'zonedTimeToUtc').
+
+Import trace for requested module:
+./src/lib/time.ts
+./src/app/api/test-timezone/route.ts
+
+./src/lib/time.ts
+Attempted import error: 'utcToZonedTime' is not exported from 'date-fns-tz' (imported as 'utcToZonedTime').
+
+Import trace for requested module:
+./src/lib/time.ts
+./src/app/api/test-timezone/route.ts
+
+./src/lib/time.ts
+Attempted import error: 'utcToZonedTime' is not exported from 'date-fns-tz' (imported as 'utcToZonedTime').
+
+Import trace for requested module:
+./src/lib/time.ts
+./src/app/api/test-timezone/route.ts
+
+./src/lib/time.ts
+Attempted import error: 'utcToZonedTime' is not exported from 'date-fns-tz' (imported as 'utcToZonedTime').
+
+Import trace for requested module:
+./src/lib/time.ts
+./src/app/api/test-timezone/route.ts
+
+./src/lib/time.ts
+Attempted import error: 'zonedTimeToUtc' is not exported from 'date-fns-tz' (imported as 'zonedTimeToUtc').
+
+Import trace for requested module:
+./src/lib/time.ts
+./src/app/api/test-timezone/route.ts
+
+./src/lib/time.ts
+Attempted import error: 'utcToZonedTime' is not exported from 'date-fns-tz' (imported as 'utcToZonedTime').
+
+Import trace for requested module:
+./src/lib/time.ts
+./src/app/api/test-timezone/route.ts
+🧪 STARTING TIMEZONE TEST API ENDPOINT
+=====================================
+🔍 TIMEZONE VERIFICATION TEST
+============================
+
+📅 Current Time Test:
+UTC: 2025-07-21T16:12:16.047Z
+Verification failed: TypeError: (0 , date_fns_tz__WEBPACK_IMPORTED_MODULE_1__.utcToZonedTime) is not a function
+    at newGetCurrentPSTTimeImplementation (src/lib/time.ts:150:24)
+    at verifyTimezoneFix (src/lib/time.ts:797:22)
+    at GET (src/app/api/test-timezone/route.ts:25:21)
+  148 |   
+  149 |   // Return current time in PST/PDT
+> 150 |   return utcToZonedTime(now, TIMEZONE);
+      |                        ^
+  151 | }
+  152 |
+  153 | /**
+
+🌅 DST Transition Test (March 10, 2025):
+UTC: 2025-03-10T10:00:00.000Z
+DST test failed: TypeError: (0 , date_fns_tz__WEBPACK_IMPORTED_MODULE_1__.utcToZonedTime) is not a function
+    at newToPSTImplementation (src/lib/time.ts:157:24)
+    at verifyTimezoneFix (src/lib/time.ts:813:21)
+    at GET (src/app/api/test-timezone/route.ts:25:21)
+  155 |  */
+  156 | function newToPSTImplementation(date: Date): Date {
+> 157 |   return utcToZonedTime(date, TIMEZONE);
+      |                        ^
+  158 | }
+  159 |
+  160 | /**
+
+⏰ Time Slots Test:
+🚨 New timezone implementation failed, falling back to original: TypeError: (0 , date_fns_tz__WEBPACK_IMPORTED_MODULE_1__.utcToZonedTime) is not a function
+    at newGetCurrentPSTTimeImplementation (src/lib/time.ts:150:24)
+    at getCurrentPSTTime (src/lib/time.ts:204:11)
+    at getDisplayDate (src/lib/time.ts:216:30)
+    at _originalCreateTimeSlots (src/lib/time.ts:60:34)
+    at verifyTimezoneFix (src/lib/time.ts:825:21)
+    at GET (src/app/api/test-timezone/route.ts:25:21)
+  148 |   
+  149 |   // Return current time in PST/PDT
+> 150 |   return utcToZonedTime(now, TIMEZONE);
+      |                        ^
+  151 | }
+  152 |
+  153 | /**
+🚨 New timezone implementation failed, falling back to original: TypeError: (0 , date_fns_tz__WEBPACK_IMPORTED_MODULE_1__.utcToZonedTime) is not a function
+    at newGetCurrentPSTTimeImplementation (src/lib/time.ts:150:24)
+    at getCurrentPSTTime (src/lib/time.ts:204:11)
+    at getDisplayDate (src/lib/time.ts:216:30)
+    at newCreateTimeSlotsImplementation (src/lib/time.ts:171:34)
+    at verifyTimezoneFix (src/lib/time.ts:826:21)
+    at GET (src/app/api/test-timezone/route.ts:25:21)
+  148 |   
+  149 |   // Return current time in PST/PDT
+> 150 |   return utcToZonedTime(now, TIMEZONE);
+      |                        ^
+  151 | }
+  152 |
+  153 | /**
+Time slots test failed: TypeError: (0 , date_fns_tz__WEBPACK_IMPORTED_MODULE_1__.utcToZonedTime) is not a function
+    at newCreateTimeSlotsImplementation (src/lib/time.ts:174:33)
+    at verifyTimezoneFix (src/lib/time.ts:826:21)
+    at GET (src/app/api/test-timezone/route.ts:25:21)
+  172 |   
+  173 |   // Convert to PST/PDT to get the correct day
+> 174 |   const pstDate = utcToZonedTime(baseDate, TIMEZONE);
+      |                                 ^
+  175 |   const year = pstDate.getFullYear();
+  176 |   const month = pstDate.getMonth() + 1; // Convert to 1-indexed
+  177 |   const day = pstDate.getDate();
+
+✅ Verification complete - check results above
+🧪 APP_TIME_OFFSET TEST
+=====================
+Current APP_TIME_OFFSET: null
+🚨 New timezone implementation failed, falling back to original: TypeError: (0 , date_fns_tz__WEBPACK_IMPORTED_MODULE_1__.utcToZonedTime) is not a function
+    at newGetCurrentPSTTimeImplementation (src/lib/time.ts:150:24)
+    at getCurrentPSTTime (src/lib/time.ts:204:11)
+    at testAppTimeOffset (src/lib/time.ts:848:22)
+    at GET (src/app/api/test-timezone/route.ts:26:21)
+  148 |   
+  149 |   // Return current time in PST/PDT
+> 150 |   return utcToZonedTime(now, TIMEZONE);
+      |                        ^
+  151 | }
+  152 |
+  153 | /**
+Current PST time: Jul 21, 2025, 9:12:16 AM
+🔧 COMPREHENSIVE TIMEZONE DEBUG
+==============================
+
+📍 Input time (UTC): 2025-07-21T16:12:16.420Z
+
+🔄 Function Tests:
+🚨 New timezone implementation failed, falling back to original: TypeError: (0 , date_fns_tz__WEBPACK_IMPORTED_MODULE_1__.utcToZonedTime) is not a function
+    at newGetCurrentPSTTimeImplementation (src/lib/time.ts:150:24)
+    at getCurrentPSTTime (src/lib/time.ts:204:11)
+    at debugTimezoneFunctions (src/lib/time.ts:871:20)
+    at GET (src/app/api/test-timezone/route.ts:27:26)
+  148 |   
+  149 |   // Return current time in PST/PDT
+> 150 |   return utcToZonedTime(now, TIMEZONE);
+      |                        ^
+  151 | }
+  152 |
+  153 | /**
+getCurrentPSTTime(): Jul 21, 2025, 9:12:16 AM
+🚨 New toPST implementation failed, falling back to original: TypeError: (0 , date_fns_tz__WEBPACK_IMPORTED_MODULE_1__.utcToZonedTime) is not a function
+    at newToPSTImplementation (src/lib/time.ts:157:24)
+    at toPST (src/lib/time.ts:235:11)
+    at debugTimezoneFunctions (src/lib/time.ts:878:22)
+    at GET (src/app/api/test-timezone/route.ts:27:26)
+  155 |  */
+  156 | function newToPSTImplementation(date: Date): Date {
+> 157 |   return utcToZonedTime(date, TIMEZONE);
+      |                        ^
+  158 | }
+  159 |
+  160 | /**
+toPST(): Jul 21, 2025, 9:12:16 AM
+🚨 New timezone implementation failed, falling back to original: TypeError: (0 , date_fns_tz__WEBPACK_IMPORTED_MODULE_1__.utcToZonedTime) is not a function
+    at newGetCurrentPSTTimeImplementation (src/lib/time.ts:150:24)
+    at getCurrentPSTTime (src/lib/time.ts:204:11)
+    at getDisplayDate (src/lib/time.ts:216:30)
+    at newCreateTimeSlotsImplementation (src/lib/time.ts:171:34)
+    at createTimeSlots (src/lib/time.ts:273:11)
+    at debugTimezoneFunctions (src/lib/time.ts:885:18)
+    at GET (src/app/api/test-timezone/route.ts:27:26)
+  148 |   
+  149 |   // Return current time in PST/PDT
+> 150 |   return utcToZonedTime(now, TIMEZONE);
+      |                        ^
+  151 | }
+  152 |
+  153 | /**
+🚨 New createTimeSlots implementation failed, falling back to original: TypeError: (0 , date_fns_tz__WEBPACK_IMPORTED_MODULE_1__.utcToZonedTime) is not a function
+    at newCreateTimeSlotsImplementation (src/lib/time.ts:174:33)
+    at createTimeSlots (src/lib/time.ts:273:11)
+    at debugTimezoneFunctions (src/lib/time.ts:885:18)
+    at GET (src/app/api/test-timezone/route.ts:27:26)
+  172 |   
+  173 |   // Convert to PST/PDT to get the correct day
+> 174 |   const pstDate = utcToZonedTime(baseDate, TIMEZONE);
+      |                                 ^
+  175 |   const year = pstDate.getFullYear();
+  176 |   const month = pstDate.getMonth() + 1; // Convert to 1-indexed
+  177 |   const day = pstDate.getDate();
+🚨 New timezone implementation failed, falling back to original: TypeError: (0 , date_fns_tz__WEBPACK_IMPORTED_MODULE_1__.utcToZonedTime) is not a function
+    at newGetCurrentPSTTimeImplementation (src/lib/time.ts:150:24)
+    at getCurrentPSTTime (src/lib/time.ts:204:11)
+    at getDisplayDate (src/lib/time.ts:216:30)
+    at _originalCreateTimeSlots (src/lib/time.ts:60:34)
+    at createTimeSlots (src/lib/time.ts:276:11)
+    at debugTimezoneFunctions (src/lib/time.ts:885:18)
+    at GET (src/app/api/test-timezone/route.ts:27:26)
+  148 |   
+  149 |   // Return current time in PST/PDT
+> 150 |   return utcToZonedTime(now, TIMEZONE);
+      |                        ^
+  151 | }
+  152 |
+  153 | /**
+createTimeSlots():
+  11AM: Jul 21, 2025, 11:00:00 AM
+  2PM: Jul 21, 2025, 2:00:00 PM
+  5PM: Jul 21, 2025, 5:00:00 PM
+
+⏰ Display Time Verification:
+🚨 New timezone implementation failed, falling back to original: TypeError: (0 , date_fns_tz__WEBPACK_IMPORTED_MODULE_1__.utcToZonedTime) is not a function
+    at newGetCurrentPSTTimeImplementation (src/lib/time.ts:150:24)
+    at getCurrentPSTTime (src/lib/time.ts:204:11)
+    at getDisplayDate (src/lib/time.ts:216:30)
+    at newCreateTimeSlotsImplementation (src/lib/time.ts:171:34)
+    at createTimeSlots (src/lib/time.ts:273:11)
+    at debugTimezoneFunctions (src/lib/time.ts:897:18)
+    at GET (src/app/api/test-timezone/route.ts:27:26)
+  148 |   
+  149 |   // Return current time in PST/PDT
+> 150 |   return utcToZonedTime(now, TIMEZONE);
+      |                        ^
+  151 | }
+  152 |
+  153 | /**
+🚨 New createTimeSlots implementation failed, falling back to original: TypeError: (0 , date_fns_tz__WEBPACK_IMPORTED_MODULE_1__.utcToZonedTime) is not a function
+    at newCreateTimeSlotsImplementation (src/lib/time.ts:174:33)
+    at createTimeSlots (src/lib/time.ts:273:11)
+    at debugTimezoneFunctions (src/lib/time.ts:897:18)
+    at GET (src/app/api/test-timezone/route.ts:27:26)
+  172 |   
+  173 |   // Convert to PST/PDT to get the correct day
+> 174 |   const pstDate = utcToZonedTime(baseDate, TIMEZONE);
+      |                                 ^
+  175 |   const year = pstDate.getFullYear();
+  176 |   const month = pstDate.getMonth() + 1; // Convert to 1-indexed
+  177 |   const day = pstDate.getDate();
+🚨 New timezone implementation failed, falling back to original: TypeError: (0 , date_fns_tz__WEBPACK_IMPORTED_MODULE_1__.utcToZonedTime) is not a function
+    at newGetCurrentPSTTimeImplementation (src/lib/time.ts:150:24)
+    at getCurrentPSTTime (src/lib/time.ts:204:11)
+    at getDisplayDate (src/lib/time.ts:216:30)
+    at _originalCreateTimeSlots (src/lib/time.ts:60:34)
+    at createTimeSlots (src/lib/time.ts:276:11)
+    at debugTimezoneFunctions (src/lib/time.ts:897:18)
+    at GET (src/app/api/test-timezone/route.ts:27:26)
+  148 |   
+  149 |   // Return current time in PST/PDT
+> 150 |   return utcToZonedTime(now, TIMEZONE);
+      |                        ^
+  151 | }
+  152 |
+  153 | /**
+Expected: 11:05 AM, 2:05 PM, 5:05 PM
+Actual  : 11:00 AM, 2:00 PM, 5:00 PM
+Correct : false
+🚨 New timezone implementation failed, falling back to original: TypeError: (0 , date_fns_tz__WEBPACK_IMPORTED_MODULE_1__.utcToZonedTime) is not a function
+    at newGetCurrentPSTTimeImplementation (src/lib/time.ts:150:24)
+    at getCurrentPSTTime (src/lib/time.ts:204:11)
+    at GET (src/app/api/test-timezone/route.ts:30:41)
+  148 |   
+  149 |   // Return current time in PST/PDT
+> 150 |   return utcToZonedTime(now, TIMEZONE);
+      |                        ^
+  151 | }
+  152 |
+  153 | /**
+🚨 New timezone implementation failed, falling back to original: TypeError: (0 , date_fns_tz__WEBPACK_IMPORTED_MODULE_1__.utcToZonedTime) is not a function
+    at newGetCurrentPSTTimeImplementation (src/lib/time.ts:150:24)
+    at getCurrentPSTTime (src/lib/time.ts:204:11)
+    at getDisplayDate (src/lib/time.ts:216:30)
+    at newCreateTimeSlotsImplementation (src/lib/time.ts:171:34)
+    at createTimeSlots (src/lib/time.ts:273:11)
+    at GET (src/app/api/test-timezone/route.ts:31:37)
+  148 |   
+  149 |   // Return current time in PST/PDT
+> 150 |   return utcToZonedTime(now, TIMEZONE);
+      |                        ^
+  151 | }
+  152 |
+  153 | /**
+🚨 New createTimeSlots implementation failed, falling back to original: TypeError: (0 , date_fns_tz__WEBPACK_IMPORTED_MODULE_1__.utcToZonedTime) is not a function
+    at newCreateTimeSlotsImplementation (src/lib/time.ts:174:33)
+    at createTimeSlots (src/lib/time.ts:273:11)
+    at GET (src/app/api/test-timezone/route.ts:31:37)
+  172 |   
+  173 |   // Convert to PST/PDT to get the correct day
+> 174 |   const pstDate = utcToZonedTime(baseDate, TIMEZONE);
+      |                                 ^
+  175 |   const year = pstDate.getFullYear();
+  176 |   const month = pstDate.getMonth() + 1; // Convert to 1-indexed
+  177 |   const day = pstDate.getDate();
+🚨 New timezone implementation failed, falling back to original: TypeError: (0 , date_fns_tz__WEBPACK_IMPORTED_MODULE_1__.utcToZonedTime) is not a function
+    at newGetCurrentPSTTimeImplementation (src/lib/time.ts:150:24)
+    at getCurrentPSTTime (src/lib/time.ts:204:11)
+    at getDisplayDate (src/lib/time.ts:216:30)
+    at _originalCreateTimeSlots (src/lib/time.ts:60:34)
+    at createTimeSlots (src/lib/time.ts:276:11)
+    at GET (src/app/api/test-timezone/route.ts:31:37)
+  148 |   
+  149 |   // Return current time in PST/PDT
+> 150 |   return utcToZonedTime(now, TIMEZONE);
+      |                        ^
+  151 | }
+  152 |
+  153 | /**
+
+📊 BASIC FUNCTIONALITY TEST
+===========================
+Current PST time: Jul 21, 2025, 9:12:16 AM
+Time slots created: 3
+11AM: 11:00 AM
+2PM: 2:00 PM
+5PM: 5:00 PM
+
+🎯 CRITICAL REQUIREMENT CHECK
+=============================
+Expected times: 11:05 AM, 2:05 PM, 5:05 PM
+Actual times  : 11:00 AM, 2:00 PM, 5:00 PM
+SUCCESS: false
+ GET /api/test-timezone 200 in 1859ms
+ ✓ Compiled /api/test-timezone in 209ms (404 modules)
+ ✓ Compiled in 75ms (404 modules)
+ ✓ Compiled in 108ms (404 modules)
+ ✓ Compiled in 95ms (404 modules)
+ ✓ Compiled in 175ms (404 modules)
+ ✓ Compiled in 121ms (404 modules)
+🧪 STARTING TIMEZONE TEST API ENDPOINT
+=====================================
+🔍 TIMEZONE VERIFICATION TEST
+============================
+
+📅 Current Time Test:
+UTC: 2025-07-21T16:15:03.344Z
+PST (old): 7/21/2025, 9:15:03 AM
+PST (new): 7/21/2025, 9:15:03 AM
+Match: true
+
+🌅 DST Transition Test (March 10, 2025):
+UTC: 2025-03-10T10:00:00.000Z
+PST (old): 3/10/2025, 3:00:00 AM
+PST (new): 3/10/2025, 3:00:00 AM
+Match: true
+
+⏰ Time Slots Test:
+Old slots minutes: [ 0, 0, 0 ]
+New slots minutes: [ 5, 5, 5 ]
+Fixed minute issue: true
+
+✅ Verification complete - check results above
+🧪 APP_TIME_OFFSET TEST
+=====================
+Current APP_TIME_OFFSET: null
+Current PST time: Jul 21, 2025, 9:15:03 AM
+🔧 COMPREHENSIVE TIMEZONE DEBUG
+==============================
+
+📍 Input time (UTC): 2025-07-21T16:15:03.348Z
+
+🔄 Function Tests:
+getCurrentPSTTime(): Jul 21, 2025, 9:15:03 AM
+toPST(): Jul 21, 2025, 9:15:03 AM
+createTimeSlots():
+  11AM: Jul 21, 2025, 11:05:00 AM
+  2PM: Jul 21, 2025, 2:05:00 PM
+  5PM: Jul 21, 2025, 5:05:00 PM
+
+⏰ Display Time Verification:
+Expected: 11:05 AM, 2:05 PM, 5:05 PM
+Actual  : 11:05 AM, 2:05 PM, 5:05 PM
+Correct : true
+
+📊 BASIC FUNCTIONALITY TEST
+===========================
+Current PST time: Jul 21, 2025, 9:15:03 AM
+Time slots created: 3
+11AM: 11:05 AM
+2PM: 2:05 PM
+5PM: 5:05 PM
+
+🎯 CRITICAL REQUIREMENT CHECK
+=============================
+Expected times: 11:05 AM, 2:05 PM, 5:05 PM
+Actual times  : 11:05 AM, 2:05 PM, 5:05 PM
+SUCCESS: true
+ GET /api/test-timezone 200 in 93ms
+🧪 STARTING TIMEZONE TEST API ENDPOINT
+=====================================
+🔍 TIMEZONE VERIFICATION TEST
+============================
+
+📅 Current Time Test:
+UTC: 2025-07-21T16:15:35.093Z
+PST (old): 7/21/2025, 9:15:35 AM
+PST (new): 7/21/2025, 9:15:35 AM
+Match: true
+
+🌅 DST Transition Test (March 10, 2025):
+UTC: 2025-03-10T10:00:00.000Z
+PST (old): 3/10/2025, 3:00:00 AM
+PST (new): 3/10/2025, 3:00:00 AM
+Match: true
+
+⏰ Time Slots Test:
+Old slots minutes: [ 0, 0, 0 ]
+New slots minutes: [ 5, 5, 5 ]
+Fixed minute issue: true
+
+✅ Verification complete - check results above
+🧪 APP_TIME_OFFSET TEST
+=====================
+Current APP_TIME_OFFSET: null
+Current PST time: Jul 21, 2025, 9:15:35 AM
+🔧 COMPREHENSIVE TIMEZONE DEBUG
+==============================
+
+📍 Input time (UTC): 2025-07-21T16:15:35.097Z
+
+🔄 Function Tests:
+getCurrentPSTTime(): Jul 21, 2025, 9:15:35 AM
+toPST(): Jul 21, 2025, 9:15:35 AM
+createTimeSlots():
+  11AM: Jul 21, 2025, 11:05:00 AM
+  2PM: Jul 21, 2025, 2:05:00 PM
+  5PM: Jul 21, 2025, 5:05:00 PM
+
+⏰ Display Time Verification:
+Expected: 11:05 AM, 2:05 PM, 5:05 PM
+Actual  : 11:05 AM, 2:05 PM, 5:05 PM
+Correct : true
+
+📊 BASIC FUNCTIONALITY TEST
+===========================
+Current PST time: Jul 21, 2025, 9:15:35 AM
+Time slots created: 3
+11AM: 11:05 AM
+2PM: 2:05 PM
+5PM: 5:05 PM
+
+🎯 CRITICAL REQUIREMENT CHECK
+=============================
+Expected times: 11:05 AM, 2:05 PM, 5:05 PM
+Actual times  : 11:05 AM, 2:05 PM, 5:05 PM
+SUCCESS: true
+ GET /api/test-timezone 200 in 27ms
+ ✓ Compiled in 243ms (683 modules)
+ ✓ Compiled /api/test-app-time-offset in 332ms (685 modules)
+🧪 TESTING APP_TIME_OFFSET
+===========================
+Test offset parameter: 14.5
+Environment variable: 14.5
+Current PST time: Jul 21, 2025, 2:30:00 PM
+Expected time: 14:30
+Actual time: 14:30
+APP_TIME_OFFSET working: true
+🧪 APP_TIME_OFFSET TEST
+=====================
+Current APP_TIME_OFFSET: 14.5
+Current PST time: Jul 21, 2025, 2:30:00 PM
+Expected hour: 14:30
+Actual hour: 14:30
+ GET /api/test-app-time-offset?offset=14.5 200 in 368ms
+🧪 TESTING APP_TIME_OFFSET
+===========================
+Test offset parameter: 11
+Environment variable: 11
+Current PST time: Jul 21, 2025, 11:00:00 AM
+Expected time: 11:00
+Actual time: 11:00
+APP_TIME_OFFSET working: true
+🧪 APP_TIME_OFFSET TEST
+=====================
+Current APP_TIME_OFFSET: 11
+Current PST time: Jul 21, 2025, 11:00:00 AM
+Expected hour: 11:00
+Actual hour: 11:00
+ GET /api/test-app-time-offset?offset=11 200 in 18ms
+🧪 TESTING APP_TIME_OFFSET
+===========================
+Test offset parameter: 17.25
+Environment variable: 17.25
+Current PST time: Jul 21, 2025, 5:15:00 PM
+Expected time: 17:15
+Actual time: 17:15
+APP_TIME_OFFSET working: true
+🧪 APP_TIME_OFFSET TEST
+=====================
+Current APP_TIME_OFFSET: 17.25
+Current PST time: Jul 21, 2025, 5:15:00 PM
+Expected hour: 17:15
+Actual hour: 17:15
+ GET /api/test-app-time-offset?offset=17.25 200 in 5ms
+ ○ Compiling /circles ...
+ ✓ Compiled /circles in 2.4s (2342 modules)
+📅 Event timing for 11AM: {
+  eventStart: '11:05:00 AM',
+  eventEnd: '11:25:00 AM',
+  feedbackStart: '11:25:00 AM',
+  feedbackEnd: '8:00:00 PM',
+  currentTime: '9:16:39 AM',
+  inWindow: false
+}
+📅 Event timing for 2PM: {
+  eventStart: '2:05:00 PM',
+  eventEnd: '2:25:00 PM',
+  feedbackStart: '2:25:00 PM',
+  feedbackEnd: '8:00:00 PM',
+  currentTime: '9:16:39 AM',
+  inWindow: false
+}
+📅 Event timing for 5PM: {
+  eventStart: '5:05:00 PM',
+  eventEnd: '5:25:00 PM',
+  feedbackStart: '5:25:00 PM',
+  feedbackEnd: '8:00:00 PM',
+  currentTime: '9:16:39 AM',
+  inWindow: false
+}
+ HEAD /circles 200 in 2699ms
+ ✓ Compiled /api/test-timezone in 358ms (404 modules)
+🧪 STARTING TIMEZONE TEST API ENDPOINT
+=====================================
+🔍 TIMEZONE VERIFICATION TEST
+============================
+
+📅 Current Time Test:
+UTC: 2025-07-21T16:18:13.065Z
+PST (old): 7/21/2025, 9:18:13 AM
+PST (new): 7/21/2025, 9:18:13 AM
+Match: true
+
+🌅 DST Transition Test (March 10, 2025):
+UTC: 2025-03-10T10:00:00.000Z
+PST (old): 3/10/2025, 3:00:00 AM
+PST (new): 3/10/2025, 3:00:00 AM
+Match: true
+
+⏰ Time Slots Test:
+Old slots minutes: [ 0, 0, 0 ]
+New slots minutes: [ 5, 5, 5 ]
+Fixed minute issue: true
+
+✅ Verification complete - check results above
+🧪 APP_TIME_OFFSET TEST
+=====================
+Current APP_TIME_OFFSET: null
+Current PST time: Jul 21, 2025, 9:18:13 AM
+🔧 COMPREHENSIVE TIMEZONE DEBUG
+==============================
+
+📍 Input time (UTC): 2025-07-21T16:18:13.071Z
+
+🔄 Function Tests:
+getCurrentPSTTime(): Jul 21, 2025, 9:18:13 AM
+toPST(): Jul 21, 2025, 9:18:13 AM
+createTimeSlots():
+  11AM: Jul 21, 2025, 11:05:00 AM
+  2PM: Jul 21, 2025, 2:05:00 PM
+  5PM: Jul 21, 2025, 5:05:00 PM
+
+⏰ Display Time Verification:
+Expected: 11:05 AM, 2:05 PM, 5:05 PM
+Actual  : 11:05 AM, 2:05 PM, 5:05 PM
+Correct : true
+
+📊 BASIC FUNCTIONALITY TEST
+===========================
+Current PST time: Jul 21, 2025, 9:18:13 AM
+Time slots created: 3
+11AM: 11:05 AM
+2PM: 2:05 PM
+5PM: 5:05 PM
+
+🎯 CRITICAL REQUIREMENT CHECK
+=============================
+Expected times: 11:05 AM, 2:05 PM, 5:05 PM
+Actual times  : 11:05 AM, 2:05 PM, 5:05 PM
+SUCCESS: true
+ GET /api/test-timezone 200 in 441ms
+ ✓ Compiled in 491ms (652 modules)
+ ✓ Compiled in 280ms (651 modules)
+ ✓ Compiled in 277ms (665 modules)
+ ✓ Compiled /circles in 309ms (1658 modules)
+📅 Event timing for 11AM: {
+  eventStart: '11:05:00 AM',
+  eventEnd: '11:25:00 AM',
+  feedbackStart: '11:25:00 AM',
+  feedbackEnd: '8:00:00 PM',
+  currentTime: '9:19:04 AM',
+  inWindow: false
+}
+📅 Event timing for 2PM: {
+  eventStart: '2:05:00 PM',
+  eventEnd: '2:25:00 PM',
+  feedbackStart: '2:25:00 PM',
+  feedbackEnd: '8:00:00 PM',
+  currentTime: '9:19:04 AM',
+  inWindow: false
+}
+📅 Event timing for 5PM: {
+  eventStart: '5:05:00 PM',
+  eventEnd: '5:25:00 PM',
+  feedbackStart: '5:25:00 PM',
+  feedbackEnd: '8:00:00 PM',
+  currentTime: '9:19:04 AM',
+  inWindow: false
+}
+ HEAD /circles 200 in 560ms
+[?25h

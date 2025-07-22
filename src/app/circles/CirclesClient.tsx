@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { getMapUrl, getNavigationUrl } from "@/lib/maps";
 import { Location } from "@/lib/types";
+import { AttendanceModal } from "@/components/circles/AttendanceModal";
 
 interface CirclesClientProps {
   initialTimeSlots: TimeSlotWithUserStatus[];
@@ -35,6 +36,13 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
   
   // Use state for current time with interval updates (not every render)
   const [currentTime, setCurrentTime] = useState(() => getNow());
+  
+  // Attendance modal state
+  const [attendanceModal, setAttendanceModal] = useState<{
+    isOpen: boolean;
+    timeSlot: string;
+    date: Date;
+  } | null>(null);
   
   // Development-only render counting
   useEffect(() => {
@@ -79,6 +87,7 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
   const [justReset, setJustReset] = useState(false);
   const [location, setLocation] = useState<Location | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [feedbackStatus, setFeedbackStatus] = useState<{ [key: string]: boolean }>({});
   const router = useRouter();
 
   // Check for pending feedback and redirect if necessary
@@ -102,6 +111,34 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
     
     fetchLocation();
   }, []);
+
+  // Load feedback status for all time slots
+  useEffect(() => {
+    async function loadFeedbackStatus() {
+      if (!isLoaded || !timeSlots.length) return;
+
+      const { getFeedbackRecord } = await import('@/lib/feedback-keys');
+      const statusUpdates: { [key: string]: boolean } = {};
+
+      for (const slot of timeSlots) {
+        const slotKey = slot.timeSlot.time.toISOString();
+        const timeSlotString = slot.timeSlot.time.getHours() === 11 ? '11AM' : 
+                              slot.timeSlot.time.getHours() === 14 ? '2PM' : '5PM';
+        
+        try {
+          const feedbackRecord = await getFeedbackRecord('dev-user-id', timeSlotString, slot.timeSlot.time);
+          statusUpdates[slotKey] = feedbackRecord && (feedbackRecord.status === 'submitted' || feedbackRecord.status === 'skipped');
+        } catch (error) {
+          console.error('Error loading feedback status for slot:', slotKey, error);
+          statusUpdates[slotKey] = false;
+        }
+      }
+
+      setFeedbackStatus(statusUpdates);
+    }
+
+    loadFeedbackStatus();
+  }, [isLoaded, timeSlots]);
 
   // Get current user ID (authenticated or anonymous)
   const currentUserId = getCurrentUserId(authenticatedUser);
@@ -186,16 +223,9 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
         hour: slot.timeSlot.time.getHours()
       } as const;
 
-      // Check if feedback was submitted (needed for getButtonState)
-      let feedbackSubmitted = false;
-      if (typeof window !== 'undefined') {
-        try {
-          const feedbackRecord = getFeedbackRecord('dev-user-id', timeSlot.slot, timeSlot.time);
-          feedbackSubmitted = feedbackRecord && (feedbackRecord.status === 'submitted' || feedbackRecord.status === 'skipped');
-        } catch (e) {
-          console.error('Error checking feedback record:', e);
-        }
-      }
+      // Check if feedback was submitted (from loaded state)
+      const slotKey = slot.timeSlot.time.toISOString();
+      const feedbackSubmitted = feedbackStatus[slotKey] || false;
 
       // DEBUG: Log button state computation for each slot
       console.log(`🔍 BUTTON STATE DEBUG for ${timeSlot.slot}:`, {
@@ -252,7 +282,7 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
         isDisabled: buttonStateResult.isDisabled
       };
     });
-  }, [timeSlots, isLoaded, justReset, currentTime]);
+  }, [timeSlots, isLoaded, justReset, currentTime, feedbackStatus]);
 
   const handleSlotAction = async (slot: TimeSlotWithUserStatus) => {
     debugLogger.logSection("BUTTON CLICK HANDLER START");
@@ -271,13 +301,16 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
 
     if (slot.buttonState === "feedback") {
       debugLogger.logButtonClick('navigate-to-feedback', slot.timeSlot.time.toISOString(), currentUserId);
-      // Navigate to feedback page with actual circle ID
+      // Show attendance modal instead of navigating directly
       const date = new Date(slot.timeSlot.time);
-      const dateStr = date.toISOString().split('T')[0];
       const hour = slot.timeSlot.time.getHours();
       const timeSlot = hour === 11 ? '11AM' : hour === 14 ? '2PM' : '5PM';
-      const circleId = slot.assignedCircleId || `${dateStr}_${timeSlot}_Circle_1`;
-      router.push(`/feedback?timeSlot=${timeSlot}&eventId=${circleId}`);
+      
+      setAttendanceModal({
+        isOpen: true,
+        timeSlot,
+        date
+      });
       return;
     }
 
@@ -364,6 +397,31 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
     }
   };
 
+  // Attendance modal handlers
+  const handleCloseAttendanceModal = () => {
+    setAttendanceModal(null);
+  };
+
+  const handleAttendanceMarked = async () => {
+    // Refresh feedback status for the affected time slot
+    const { getFeedbackRecord } = await import('@/lib/feedback-keys');
+    const statusUpdates: { [key: string]: boolean } = {};
+
+    for (const slot of timeSlots) {
+      const slotKey = slot.timeSlot.time.toISOString();
+      const timeSlotString = slot.timeSlot.time.getHours() === 11 ? '11AM' :
+                           slot.timeSlot.time.getHours() === 14 ? '2PM' : '5PM';
+      
+      try {
+        const feedbackRecord = await getFeedbackRecord('dev-user-id', timeSlotString, slot.timeSlot.time);
+        statusUpdates[slotKey] = feedbackRecord && (feedbackRecord.status === 'submitted' || feedbackRecord.status === 'skipped');
+      } catch (error) {
+        console.error('Error loading feedback status for slot:', slotKey, error);
+      }
+    }
+
+    setFeedbackStatus(statusUpdates);
+  };
 
   const getButtonClasses = (slot: TimeSlotWithUserStatus) => {
     if (slot.buttonState === "confirmed") {
@@ -426,9 +484,8 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
                   <div className="flex items-center gap-4">
                     <span className="text-[1.125rem] font-medium whitespace-nowrap" style={{color: 'var(--color-text-primary)'}}>
                       {(() => {
-                        // Add 5 minutes for display only
+                        // Display the actual time without adding minutes
                         const displayTime = new Date(slot.timeSlot.time);
-                        displayTime.setMinutes(displayTime.getMinutes() + 5);
                         
                         const hours = displayTime.getHours();
                         const minutes = displayTime.getMinutes();
@@ -557,6 +614,17 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
           </div>
         </section>
       </main>
+
+      {/* Attendance Modal */}
+      {attendanceModal && (
+        <AttendanceModal
+          isOpen={attendanceModal.isOpen}
+          onClose={handleCloseAttendanceModal}
+          timeSlot={attendanceModal.timeSlot}
+          date={attendanceModal.date}
+          onAttendanceMarked={handleAttendanceMarked}
+        />
+      )}
     </div>
   );
 }

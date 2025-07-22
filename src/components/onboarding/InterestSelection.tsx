@@ -41,24 +41,27 @@ export default function InterestSelection({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Load existing preferences on mount (for consistency with settings)
+  // Load existing preferences on mount using Storage utility
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      const saved = localStorage.getItem('dev-user-preferences');
-      if (saved) {
-        try {
-          const preferences = JSON.parse(saved);
+    async function loadPreferences() {
+      try {
+        const { Storage } = await import('@/lib/storage');
+        const preferences = await Storage.get<string[]>('dev-user-preferences', []);
+        
+        if (preferences && preferences.length > 0) {
           // Only select preferences that match current page options
           const pagePreferences = preferences.filter((pref: string) => 
             options.some(option => option.interestKey === pref)
           );
           setSelected(pagePreferences);
-          console.log('📋 Loaded existing preferences for this page:', pagePreferences);
-        } catch (e) {
-          console.error('Error loading preferences:', e);
+          console.log('📋 Loaded existing preferences from storage:', pagePreferences);
         }
+      } catch (e) {
+        console.error('Error loading preferences from storage:', e);
       }
     }
+    
+    loadPreferences();
   }, [options]);
 
   const handleSelect = (interestKey: string) => {
@@ -81,31 +84,25 @@ export default function InterestSelection({
     if (nextPageUrl.includes('/login?source=onboarding')) {
       try {
         // Start onboarding tracking and save selections
-        startOnboarding();
-        addCuriositySelection(selected);
+        await startOnboarding();
+        await addCuriositySelection(selected);
         
-        // Still save to localStorage for development mode
-        if (process.env.NODE_ENV === 'development') {
-          const existingSaved = localStorage.getItem('dev-user-preferences');
-          let allPreferences = [...selected];
+        // Also save to Storage utility for dev/prod parity
+        try {
+          const { Storage } = await import('@/lib/storage');
+          const existingSaved = await Storage.get<string[]>('dev-user-preferences', []);
           
-          if (existingSaved) {
-            try {
-              const existing = JSON.parse(existingSaved);
-              const currentPageKeys = options.map(opt => opt.interestKey);
-              const otherPagePreferences = existing.filter((pref: string) => 
-                !currentPageKeys.includes(pref)
-              );
-              allPreferences = [...otherPagePreferences, ...selected];
-            } catch (e) {
-              console.error('Error merging preferences:', e);
-              // Fallback to just current selections
-              allPreferences = [...selected];
-            }
-          }
+          const currentPageKeys = options.map(opt => opt.interestKey);
+          const otherPagePreferences = (existingSaved || []).filter((pref: string) => 
+            !currentPageKeys.includes(pref)
+          );
+          const allPreferences = [...otherPagePreferences, ...selected];
           
-          localStorage.setItem('dev-user-preferences', JSON.stringify(allPreferences));
-          console.log('✅ Onboarding preferences saved for auth flow:', allPreferences);
+          await Storage.set('dev-user-preferences', allPreferences);
+          console.log('✅ Onboarding preferences saved to storage for auth flow:', allPreferences);
+        } catch (storageError) {
+          console.error('Error saving preferences to storage:', storageError);
+          // Continue - not critical for onboarding flow
         }
         
         setLoading(false);
@@ -120,28 +117,24 @@ export default function InterestSelection({
     }
     
     // Original flow for non-onboarding navigation
-    // Save to localStorage in development mode for consistency with settings
-    if (process.env.NODE_ENV === 'development') {
+    // Save to Storage utility for dev/prod parity
+    try {
+      const { Storage } = await import('@/lib/storage');
       // Merge with existing preferences from other pages
-      const existingSaved = localStorage.getItem('dev-user-preferences');
-      let allPreferences = [...selected];
+      const existingSaved = await Storage.get<string[]>('dev-user-preferences', []);
       
-      if (existingSaved) {
-        try {
-          const existing = JSON.parse(existingSaved);
-          // Remove any existing preferences that are from current page options
-          const currentPageKeys = options.map(opt => opt.interestKey);
-          const otherPagePreferences = existing.filter((pref: string) => 
-            !currentPageKeys.includes(pref)
-          );
-          allPreferences = [...otherPagePreferences, ...selected];
-        } catch (e) {
-          console.error('Error merging preferences:', e);
-        }
-      }
+      // Remove any existing preferences that are from current page options
+      const currentPageKeys = options.map(opt => opt.interestKey);
+      const otherPagePreferences = (existingSaved || []).filter((pref: string) => 
+        !currentPageKeys.includes(pref)
+      );
+      const allPreferences = [...otherPagePreferences, ...selected];
       
-      localStorage.setItem('dev-user-preferences', JSON.stringify(allPreferences));
-      console.log('✅ Onboarding preferences merged and saved to localStorage:', allPreferences);
+      await Storage.set('dev-user-preferences', allPreferences);
+      console.log('✅ Onboarding preferences merged and saved to storage:', allPreferences);
+    } catch (storageError) {
+      console.error('Error saving preferences to storage:', storageError);
+      // Continue - not critical for the main flow
     }
     
     const result = await saveUserInterests(selected);

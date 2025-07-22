@@ -1,6 +1,8 @@
 /**
  * Onboarding State Management
  * Handles persistence of user selections through authentication flow
+ * 
+ * MIGRATION: Updated to use new Storage utility instead of localStorage for dev/prod parity
  */
 
 export interface OnboardingState {
@@ -11,96 +13,104 @@ export interface OnboardingState {
 
 const STORAGE_KEY = 'onboarding-state';
 
-export function saveOnboardingState(state: Partial<OnboardingState>): void {
+export async function saveOnboardingState(state: Partial<OnboardingState>): Promise<void> {
   if (typeof window === 'undefined') return;
   
   try {
-    const existing = getOnboardingState();
+    const existing = await getOnboardingState();
     const updated = { ...existing, ...state };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    console.log('💾 Saved onboarding state:', updated);
+    
+    const { Storage } = await import('./storage');
+    const success = await Storage.set(STORAGE_KEY, updated);
+    
+    if (success) {
+      console.log('💾 Saved onboarding state to storage:', updated);
+    } else {
+      console.error('❌ Failed to save onboarding state to storage');
+    }
   } catch (error) {
     console.error('Failed to save onboarding state:', error);
   }
 }
 
-export function getOnboardingState(): OnboardingState {
+export async function getOnboardingState(): Promise<OnboardingState> {
+  const defaultState = {
+    curiositySelections: [],
+    isInOnboarding: false,
+    hasCompletedAuth: false
+  };
+  
   if (typeof window === 'undefined') {
-    return {
-      curiositySelections: [],
-      isInOnboarding: false,
-      hasCompletedAuth: false
-    };
+    return defaultState;
   }
 
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const { Storage } = await import('./storage');
+    const stored = await Storage.get<OnboardingState>(STORAGE_KEY, null);
+    
     if (!stored) {
-      return {
-        curiositySelections: [],
-        isInOnboarding: false,
-        hasCompletedAuth: false
-      };
+      return defaultState;
     }
     
-    const parsed = JSON.parse(stored);
     return {
-      curiositySelections: parsed.curiositySelections || [],
-      isInOnboarding: parsed.isInOnboarding || false,
-      hasCompletedAuth: parsed.hasCompletedAuth || false
+      curiositySelections: stored.curiositySelections || [],
+      isInOnboarding: stored.isInOnboarding || false,
+      hasCompletedAuth: stored.hasCompletedAuth || false
     };
   } catch (error) {
-    console.error('Failed to parse onboarding state:', error);
-    return {
-      curiositySelections: [],
-      isInOnboarding: false,
-      hasCompletedAuth: false
-    };
+    console.error('Failed to get onboarding state from storage:', error);
+    return defaultState;
   }
 }
 
-export function clearOnboardingState(): void {
+export async function clearOnboardingState(): Promise<void> {
   if (typeof window === 'undefined') return;
   
   try {
-    localStorage.removeItem(STORAGE_KEY);
-    console.log('🗑️ Cleared onboarding state');
+    const { Storage } = await import('./storage');
+    const success = await Storage.remove(STORAGE_KEY);
+    
+    if (success) {
+      console.log('🗑️ Cleared onboarding state from storage');
+    } else {
+      console.error('❌ Failed to clear onboarding state from storage');
+    }
   } catch (error) {
     console.error('Failed to clear onboarding state:', error);
   }
 }
 
-export function startOnboarding(): void {
-  saveOnboardingState({
+export async function startOnboarding(): Promise<void> {
+  await saveOnboardingState({
     isInOnboarding: true,
     hasCompletedAuth: false,
     curiositySelections: []
   });
 }
 
-export function completeOnboarding(): void {
-  clearOnboardingState();
+export async function completeOnboarding(): Promise<void> {
+  await clearOnboardingState();
 }
 
-export function setAuthCompleted(): void {
-  saveOnboardingState({
+export async function setAuthCompleted(): Promise<void> {
+  await saveOnboardingState({
     hasCompletedAuth: true
   });
 }
 
-export function addCuriositySelection(interests: string[]): void {
+export async function addCuriositySelection(interests: string[]): Promise<void> {
   try {
-    const state = getOnboardingState();
+    const state = await getOnboardingState();
     const allSelections = [...new Set([...state.curiositySelections, ...interests])];
     
-    saveOnboardingState({
+    await saveOnboardingState({
       curiositySelections: allSelections
     });
   } catch (error) {
     console.error('Failed to add curiosity selection:', error);
     // Fallback: try to save just the new interests
     try {
-      saveOnboardingState({
+      await saveOnboardingState({
         curiositySelections: interests,
         isInOnboarding: true
       });
@@ -111,9 +121,9 @@ export function addCuriositySelection(interests: string[]): void {
 }
 
 // Utility function to check if onboarding state is valid
-export function isOnboardingStateValid(): boolean {
+export async function isOnboardingStateValid(): Promise<boolean> {
   try {
-    const state = getOnboardingState();
+    const state = await getOnboardingState();
     return state.isInOnboarding && state.curiositySelections.length > 0;
   } catch (error) {
     console.error('Error checking onboarding state validity:', error);

@@ -54,27 +54,27 @@ export default function FeedbackClient({ timeSlot, eventId }: FeedbackClientProp
       memorableMoment: memorableMoment.trim() || undefined,
     };
 
-    // Save to localStorage immediately (instant UI feedback) using centralized system
-    const savedToLocal = saveFeedbackRecord('dev-user-id', eventId, {
+    // Save to Supabase using centralized Storage system
+    const savedToStorage = await saveFeedbackRecord('dev-user-id', eventId, {
       ...feedbackData,
       status: 'submitted'
     });
     
-    if (!savedToLocal) {
-      setError('Failed to save feedback locally');
+    if (!savedToStorage) {
+      setError('Failed to save feedback');
       setIsSubmitting(false);
       return;
     }
 
-    // Redirect immediately since localStorage is saved (instant UX)
+    // Redirect after successful save
     router.push('/circles');
 
-    // Optional: Background server logging (non-blocking)
+    // Background server logging for database backup
     try {
       await submitFeedback(feedbackData);
     } catch (err) {
       console.error('Background server logging failed:', err);
-      // Don't show error to user since localStorage already succeeded
+      // Don't show error to user since main storage succeeded
     }
   };
 
@@ -82,30 +82,30 @@ export default function FeedbackClient({ timeSlot, eventId }: FeedbackClientProp
     setIsSubmitting(true);
     setError('');
 
-    // Save skip status to localStorage immediately (instant UI feedback) using centralized system
-    const savedToLocal = saveFeedbackRecord('dev-user-id', eventId, {
+    // Save skip status to Supabase using centralized Storage system
+    const savedToStorage = await saveFeedbackRecord('dev-user-id', eventId, {
       status: 'skipped'
     });
     
-    if (!savedToLocal) {
-      setError('Failed to save skip status locally');
+    if (!savedToStorage) {
+      setError('Failed to save skip status');
       setIsSubmitting(false);
       return;
     }
 
-    // Redirect immediately since localStorage is saved (instant UX)
+    // Redirect after successful save
     router.push('/circles');
 
-    // Optional: Background server logging (non-blocking)
+    // Background server logging for database backup
     try {
       await skipFeedback(eventId);
     } catch (err) {
       console.error('Background server logging failed:', err);
-      // Don't show error to user since localStorage already succeeded
+      // Don't show error to user since main storage succeeded
     }
   };
 
-  // Note: localStorage functions now handled by centralized feedback-keys utility
+  // Note: All feedback data is stored in Supabase via centralized Storage utility
 
   const isFormValid = didNotAttend || (attendanceCount !== null && rating !== null);
 

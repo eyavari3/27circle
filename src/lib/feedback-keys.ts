@@ -1,16 +1,18 @@
 /**
- * Centralized localStorage key generation for feedback system
+ * Centralized storage key generation for feedback system
  * 
  * This utility ensures consistent key formats across detection and submission
  * to prevent infinite loops and data mismatches.
+ * 
+ * MIGRATION: Updated to use new Storage utility instead of localStorage
  */
 
 /**
- * Generate feedback localStorage key for both detection and submission
+ * Generate feedback storage key for both detection and submission
  * 
  * @param userId - User ID (e.g., 'dev-user-id')
  * @param eventId - Event ID in format YYYY-MM-DD_TIME_Circle_N
- * @returns Consistent localStorage key string
+ * @returns Consistent storage key string
  */
 export function generateFeedbackKey(userId: string, eventId: string): string {
   // Use eventId as the primary identifier for consistency
@@ -41,84 +43,37 @@ export function generateEventId(timeSlot: string, date: Date): string {
 }
 
 /**
- * Migrate old localStorage keys to new format
- * 
- * @param userId - User ID
- * @param timeSlot - Time slot (11AM, 2PM, 5PM)
- * @param date - Date object for the event
- * @returns Migrated feedback data or null
+ * Legacy migration function (REMOVED)
+ * Migration completed - localStorage feedback data no longer supported
+ * All feedback data is now stored directly in Supabase via Storage utility
  */
-export function migrateLegacyFeedbackKey(
-  userId: string, 
-  timeSlot: string, 
-  date: Date
-): any | null {
-  // Check for old format: feedback-${userId}-dev-event-${timeSlot}
-  const oldKey = `feedback-${userId}-dev-event-${timeSlot}`;
-  const oldData = localStorage.getItem(oldKey);
-  
-  if (oldData) {
-    try {
-      const data = JSON.parse(oldData);
-      
-      // Generate new eventId and key
-      const eventId = generateEventId(timeSlot, date);
-      const newKey = generateFeedbackKey(userId, eventId);
-      
-      // Update data with eventId if missing
-      if (!data.eventId) {
-        data.eventId = eventId;
-      }
-      
-      // Save to new key format
-      localStorage.setItem(newKey, JSON.stringify(data));
-      
-      // Remove old key to prevent conflicts
-      localStorage.removeItem(oldKey);
-      
-      console.log('✅ Migrated feedback key:', { oldKey, newKey });
-      return data;
-    } catch (e) {
-      console.error('Error migrating legacy feedback key:', e);
-      // Remove malformed old key
-      localStorage.removeItem(oldKey);
-    }
-  }
-  
+async function migrateLegacyFeedbackKey(): Promise<null> {
+  // Migration no longer needed - all data is in Supabase
   return null;
 }
 
 /**
  * Check if feedback exists for a given event
- * Handles both new format and legacy migration
+ * All feedback data is stored in Supabase via Storage utility
  * 
  * @param userId - User ID
  * @param timeSlot - Time slot (11AM, 2PM, 5PM)
  * @param date - Date object for the event
  * @returns Feedback record or null
  */
-export function getFeedbackRecord(
+export async function getFeedbackRecord(
   userId: string, 
   timeSlot: string, 
   date: Date
-): any | null {
+): Promise<any | null> {
   const eventId = generateEventId(timeSlot, date);
   const key = generateFeedbackKey(userId, eventId);
   
-  // Check new format first
-  const newData = localStorage.getItem(key);
-  if (newData) {
-    try {
-      return JSON.parse(newData);
-    } catch (e) {
-      console.error('Error parsing feedback record:', e);
-      // Remove corrupted data
-      localStorage.removeItem(key);
-    }
-  }
+  // Import Storage dynamically to avoid circular dependencies
+  const { Storage } = await import('./storage');
   
-  // Check for legacy format and migrate
-  return migrateLegacyFeedbackKey(userId, timeSlot, date);
+  // Get data from Supabase storage
+  return await Storage.get(key, null);
 }
 
 /**
@@ -129,11 +84,11 @@ export function getFeedbackRecord(
  * @param data - Feedback data
  * @returns Success boolean
  */
-export function saveFeedbackRecord(
+export async function saveFeedbackRecord(
   userId: string, 
   eventId: string, 
   data: any
-): boolean {
+): Promise<boolean> {
   const key = generateFeedbackKey(userId, eventId);
   
   const record = {
@@ -144,9 +99,17 @@ export function saveFeedbackRecord(
   };
   
   try {
-    localStorage.setItem(key, JSON.stringify(record));
-    console.log('✅ Saved feedback record:', { key, eventId });
-    return true;
+    // Import Storage dynamically to avoid circular dependencies
+    const { Storage } = await import('./storage');
+    const success = await Storage.set(key, record);
+    
+    if (success) {
+      console.log('✅ Saved feedback record to Supabase:', { key, eventId });
+    } else {
+      console.error('❌ Failed to save feedback record to Supabase:', key);
+    }
+    
+    return success;
   } catch (e) {
     console.error('Error saving feedback record:', e);
     return false;
