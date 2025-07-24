@@ -2,18 +2,17 @@ import { redirect } from "next/navigation";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { TimeSlotWithUserStatus, CircleData } from "@/lib/types";
 import { getCurrentPSTTime, getDisplayDate, createTimeSlots, getDayBoundaries, formatDeadlineTime } from "@/lib/time";
+import { requireAuthInProduction } from "@/lib/auth/production-guards";
 import CirclesClient from "./CirclesClient";
 
 export default async function CirclesPage() {
+  // Enforce authentication in production while preserving dev utilities
+  await requireAuthInProduction();
+  
   const supabase = await createClient();
   const serviceSupabase = await createServiceClient();
   
   const { data: { user } } = await supabase.auth.getUser();
-  
-  // Temporary: Comment out auth checks for development
-  // if (!user) {
-  //   redirect("/");
-  // }
   
   // const { data: profile } = await supabase
   //   .from("users")

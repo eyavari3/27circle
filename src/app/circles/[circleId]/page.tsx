@@ -47,13 +47,13 @@ export default function UpcomingCirclePage() {
   // Dynamic time slot based on circleId - Display with 5 minute offset
   const getTimeSlot = (circleId: string) => {
     if (circleId.includes('11') || circleId.includes('11AM')) {
-      return "11:05 AM - 11:25 AM";
+      return "11:00 AM - 11:20 AM";
     } else if (circleId.includes('14') || circleId.includes('2PM')) {
-      return "02:05 PM - 02:25 PM";
+      return "2:00 PM - 2:20 PM";
     } else if (circleId.includes('17') || circleId.includes('5PM')) {
-      return "05:05 PM - 05:25 PM";
+      return "5:00 PM - 5:20 PM";
     }
-    return "02:05 PM - 02:25 PM"; // Fallback
+    return "2:00 PM - 2:20 PM"; // Fallback
   };
 
   // Mock data fallback for development

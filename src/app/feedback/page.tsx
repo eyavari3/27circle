@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { requireAuthInProduction } from '@/lib/auth/production-guards';
 import FeedbackClient from './FeedbackClient';
 import { getCurrentPSTTime } from '@/lib/time';
 import { FEEDBACK_ENABLED } from '@/lib/constants';
@@ -16,21 +17,12 @@ export default async function FeedbackPage({
 }) {
   const awaitedSearchParams = await searchParams;
   
+  // Enforce authentication in production while preserving dev utilities
+  await requireAuthInProduction();
+  
   // Redirect if feedback is disabled
   if (!FEEDBACK_ENABLED) {
     redirect('/circles');
-  }
-  
-  // In development mode, skip auth check for easier testing
-  if (process.env.NODE_ENV === 'development') {
-    // Skip auth check in dev mode
-  } else {
-    const supabase = await createClient();
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      redirect('/auth');
-    }
   }
 
   // Get event details - for now, well simulate based on time slot

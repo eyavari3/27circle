@@ -165,7 +165,7 @@ function newPstToUTCImplementation(pstDate: Date): Date {
 }
 
 /**
- * NEW: Create time slots with proper timezone handling and correct minutes (:05)
+ * NEW: Create time slots with proper timezone handling and correct minutes (:00)
  */
 function newCreateTimeSlotsImplementation(displayDate?: Date): TimeSlot[] {
   const baseDate = displayDate || getDisplayDate();
@@ -411,16 +411,16 @@ export function formatDisplayTime(date: Date): string {
 }
 
 /**
- * Format time for the specific display times shown in UI (11:05 AM, 2:05 PM, 5:05 PM)
+ * Format time for the specific display times shown in UI (11:00 AM, 2:00 PM, 5:00 PM)
  */
 export function formatSlotDisplayTime(slot: TimeSlot): string {
   switch (slot.slot) {
     case '11AM':
-      return '11:05 AM';
+      return '11:00 AM';
     case '2PM':
-      return '2:05 PM';
+      return '2:00 PM';
     case '5PM':
-      return '5:05 PM';
+      return '5:00 PM';
     default:
       return formatDisplayTime(slot.time);
   }
@@ -781,7 +781,7 @@ export function getButtonState(
 
 // ✅ All timezone functions successfully migrated to date-fns-tz
 // ✅ Safety valves working and tested
-// ✅ Time slots now correctly show 11:05 AM, 2:05 PM, 5:05 PM (fixed minute issue)
+// ✅ Time slots now correctly show 11:00 AM, 2:00 PM, 5:00 PM (fixed minute issue)
 // ✅ APP_TIME_OFFSET functionality preserved and working
 // ✅ DST transitions handled automatically by date-fns-tz
 // ✅ No hydration mismatches - server/client consistency achieved

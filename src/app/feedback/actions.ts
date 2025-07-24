@@ -38,13 +38,12 @@ export async function submitFeedback(data: FeedbackData) {
     if (process.env.NODE_ENV === 'development') {
       const supabase = await createClient();
       const { error } = await supabase
-        .from('feedback')
+        .from('user_feedback')
         .insert({
           user_id: userId,
           circle_id: data.eventId,
           attendance_count: data.attendanceCount,
-          did_not_attend: data.didNotAttend,
-          rating: data.rating,
+          quality_rating: data.rating,
           memorable_moment: data.memorableMoment,
         });
 
@@ -64,16 +63,15 @@ export async function submitFeedback(data: FeedbackData) {
       return { success: true };
     }
 
-    // In production, this would save to the feedback table
+    // In production, this would save to the user_feedback table
     const supabase = await createClient();
     const { error } = await supabase
-      .from('feedback')
+      .from('user_feedback')
       .insert({
         user_id: userId,
         circle_id: data.eventId,
         attendance_count: data.attendanceCount,
-        did_not_attend: data.didNotAttend,
-        rating: data.rating,
+        quality_rating: data.rating,
         memorable_moment: data.memorableMoment,
       });
 
@@ -108,13 +106,12 @@ export async function skipFeedback(eventId: string) {
     if (process.env.NODE_ENV === 'development') {
       const supabase = await createClient();
       const { error } = await supabase
-        .from('feedback')
+        .from('user_feedback')
         .insert({
           user_id: userId,
           circle_id: eventId,
           attendance_count: 0,
-          did_not_attend: true,
-          rating: null,
+          quality_rating: null,
           memorable_moment: null,
         });
 
@@ -132,16 +129,15 @@ export async function skipFeedback(eventId: string) {
       return { success: true };
     }
 
-    // In production, this would save to the feedback table with skip status
+    // In production, this would save to the user_feedback table with skip status
     const supabase = await createClient();
     const { error } = await supabase
-      .from('feedback')
+      .from('user_feedback')
       .insert({
         user_id: userId,
         circle_id: eventId,
         attendance_count: 0,
-        did_not_attend: true,
-        rating: null,
+        quality_rating: null,
         memorable_moment: null,
       });
 
