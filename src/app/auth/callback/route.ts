@@ -60,11 +60,12 @@ export async function GET(request: NextRequest) {
     // Check if user has completed onboarding by looking for profile data
     // Use service client to bypass RLS policies for this lookup
     const serviceSupabase = await createServiceClient()
-    const { data: profile, error: profileError } = await serviceSupabase
+    const { data: profiles, error: profileError } = await serviceSupabase
       .from('users')
       .select('full_name, gender, date_of_birth')
       .eq('id', user.id)
-      .single()
+
+    const profile = profiles && profiles.length > 0 ? profiles[0] : null;
     
     console.log('🔍 Profile lookup result:', { profile, profileError });
     

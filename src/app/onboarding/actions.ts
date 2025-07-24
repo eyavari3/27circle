@@ -56,8 +56,8 @@ export async function submitProfile(profileData: {
     return { error: 'Please fill in all required fields.' };
   }
 
-  // Use service client for profile operations to avoid permission issues
-  const supabase = await createServiceClient();
+  // CORRECT - Regular client has access to auth session
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   
   console.log('🔍 DEBUG: Auth user:', { 
