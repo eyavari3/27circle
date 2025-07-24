@@ -356,6 +356,14 @@ CREATE TABLE users (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- User interests
+CREATE TABLE user_interests (
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  interest_type TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, interest_type)
+);
+
 -- Circles (with junction table for members)
 CREATE TABLE circles (
   id TEXT PRIMARY KEY, -- Format: YYYY-MM-DD_11AM_Circle_1
@@ -423,12 +431,12 @@ CREATE INDEX idx_feedback_user ON user_feedback(user_id);
 
 -- Create updated_at trigger for user_data
 CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$ language 'plpgsql';
+$$ language 'plpgsql';
 
 CREATE TRIGGER update_user_data_updated_at BEFORE UPDATE ON user_data
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
