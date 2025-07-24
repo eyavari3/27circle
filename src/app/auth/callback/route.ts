@@ -72,17 +72,10 @@ export async function GET(request: NextRequest) {
     let redirectUrl = '/circles' // Default for completed users
     
     if (profileError || !profile || !profile.full_name) {
-      // Check if this is a Google user who might have profile in localStorage (dev only)
-      if (process.env.NODE_ENV === 'development' && user.email === 'ebr0072@gmail.com') {
-        // Your specific case - bypass profile creation
-        redirectUrl = '/circles'
-        console.log('🔧 Dev bypass: Known user with localStorage profile');
-      } else {
-        // User hasn't completed profile, send to profile page
-        redirectUrl = '/onboarding/profile'
-        console.log('👤 New user - redirecting to profile completion');
-        console.log('🔍 Reason: profileError =', profileError, 'profile =', profile);
-      }
+      // User hasn't completed profile, send to profile page
+      redirectUrl = '/onboarding/profile'
+      console.log('👤 New user - redirecting to profile completion');
+      console.log('🔍 Reason: profileError =', profileError, 'profile =', profile);
     } else if (next) {
       // Use the provided next parameter
       redirectUrl = next
