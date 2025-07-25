@@ -72,7 +72,8 @@ export function useFeedbackCheck(userId?: string) {
       (async () => {
         try {
           const { Storage } = await import('@/lib/storage');
-          const devWaitlist = await Storage.get<string[]>('dev-waitlist', null);
+          const storage = new Storage();
+          const devWaitlist = await storage.get<string[]>('dev-waitlist', null);
           
           console.log('📋 Dev waitlist check from storage:', {
             devWaitlist,

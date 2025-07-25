@@ -3,6 +3,8 @@
  * 
  * Provides a localStorage-like API with Supabase persistence, caching, and offline support.
  * Perfect dev/prod parity since both environments use the same database storage.
+ * 
+ * NEW: Class-based pattern with pre-auth sessionStorage fallback for anonymous users.
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -18,13 +20,12 @@ const cache = new Map<string, { value: any; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 // Generate unique user ID (auth user or session-based anonymous user)
-function getUserId(): string {
+function getAnonymousUserId(): string {
   if (typeof window === 'undefined') {
     return 'server-session'; // Fallback for server-side
   }
 
-  // For authenticated users, this would come from auth context
-  // For now, use session-based anonymous ID
+  // For anonymous users, use session-based anonymous ID
   let sessionId = sessionStorage.getItem('anonUserId');
   if (!sessionId) {
     sessionId = `anon-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -44,9 +45,16 @@ function isCacheValid(entry: { value: any; timestamp: number }): boolean {
 }
 
 /**
- * Enhanced Storage API - replaces localStorage with Supabase + caching
+ * Enhanced Storage Class - replaces localStorage with Supabase + caching
+ * 
+ * NEW: Supports user-specific instances and pre-auth sessionStorage fallback
  */
-export const Storage = {
+export class Storage {
+  private userId: string;
+
+  constructor(userId?: string) {
+    this.userId = userId || getAnonymousUserId();
+  }
   /**
    * Get value by key (with caching)
    * @param key Storage key
@@ -54,8 +62,17 @@ export const Storage = {
    * @returns Promise<any>
    */
   async get<T>(key: string, defaultValue: T | null = null): Promise<T | null> {
-    const userId = getUserId();
-    const cacheKey = createCacheKey(userId, key);
+    // NEW: For pre-auth onboarding, check sessionStorage first
+    if (key.startsWith('onboarding_') && this.userId.startsWith('anon-')) {
+      try {
+        const stored = sessionStorage.getItem(`temp_${key}`);
+        return stored ? JSON.parse(stored) : defaultValue;
+      } catch {
+        return defaultValue;
+      }
+    }
+
+    const cacheKey = createCacheKey(this.userId, key);
     
     // Check cache first
     const cached = cache.get(cacheKey);
@@ -67,7 +84,7 @@ export const Storage = {
       const { data, error } = await supabase
         .from('user_data')
         .select('value')
-        .eq('user_id', userId)
+        .eq('user_id', this.userId)
         .eq('key', key);
       
       if (error) {
@@ -97,7 +114,7 @@ export const Storage = {
       
       return defaultValue;
     }
-  },
+  }
 
   /**
    * Set value by key (with optimistic caching)
@@ -106,8 +123,17 @@ export const Storage = {
    * @returns Promise<boolean> Success status
    */
   async set(key: string, value: any): Promise<boolean> {
-    const userId = getUserId();
-    const cacheKey = createCacheKey(userId, key);
+    // NEW: For pre-auth onboarding, use sessionStorage only
+    if (key.startsWith('onboarding_') && this.userId.startsWith('anon-')) {
+      try {
+        sessionStorage.setItem(`temp_${key}`, JSON.stringify(value));
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    const cacheKey = createCacheKey(this.userId, key);
     
     // Optimistic cache update
     cache.set(cacheKey, {
@@ -120,7 +146,7 @@ export const Storage = {
       const { error } = await supabase
         .from('user_data')
         .upsert({
-          user_id: userId,
+          user_id: this.userId,
           key,
           value,
           updated_at: new Date().toISOString()
@@ -140,7 +166,7 @@ export const Storage = {
       cache.delete(cacheKey);
       return false;
     }
-  },
+  }
 
   /**
    * Remove value by key
@@ -148,8 +174,7 @@ export const Storage = {
    * @returns Promise<boolean> Success status
    */
   async remove(key: string): Promise<boolean> {
-    const userId = getUserId();
-    const cacheKey = createCacheKey(userId, key);
+    const cacheKey = createCacheKey(this.userId, key);
     
     // Remove from cache immediately
     cache.delete(cacheKey);
@@ -158,7 +183,7 @@ export const Storage = {
       const { error } = await supabase
         .from('user_data')
         .delete()
-        .eq('user_id', userId)
+        .eq('user_id', this.userId)
         .eq('key', key);
       
       if (error) {
@@ -169,7 +194,7 @@ export const Storage = {
     } catch (error) {
       return false;
     }
-  },
+  }
 
   /**
    * Check if key exists
@@ -179,20 +204,19 @@ export const Storage = {
   async has(key: string): Promise<boolean> {
     const value = await this.get(key);
     return value !== null;
-  },
+  }
 
   /**
    * Get all keys for current user (for debugging/migration)
    * @returns Promise<string[]>
    */
   async getAllKeys(): Promise<string[]> {
-    const userId = getUserId();
     
     try {
       const { data, error } = await supabase
         .from('user_data')
         .select('key')
-        .eq('user_id', userId);
+        .eq('user_id', this.userId);
       
       if (error) {
         return [];
@@ -202,19 +226,18 @@ export const Storage = {
     } catch (error) {
       return [];
     }
-  },
+  }
 
   /**
    * Clear all data for current user
    * @returns Promise<boolean>
    */
   async clear(): Promise<boolean> {
-    const userId = getUserId();
     
     // Clear cache for this user
     const keysToDelete: string[] = [];
     cache.forEach((_, cacheKey) => {
-      if (cacheKey.startsWith(`${userId}:`)) {
+      if (cacheKey.startsWith(`${this.userId}:`)) {
         keysToDelete.push(cacheKey);
       }
     });
@@ -224,7 +247,7 @@ export const Storage = {
       const { error } = await supabase
         .from('user_data')
         .delete()
-        .eq('user_id', userId);
+        .eq('user_id', this.userId);
       
       if (error) {
         return false;
@@ -234,7 +257,7 @@ export const Storage = {
     } catch (error) {
       return false;
     }
-  },
+  }
 
   /**
    * Manual cache invalidation (for testing/debugging)
@@ -242,13 +265,12 @@ export const Storage = {
    */
   invalidateCache(key?: string): void {
     if (key) {
-      const userId = getUserId();
-      const cacheKey = createCacheKey(userId, key);
+      const cacheKey = createCacheKey(this.userId, key);
       cache.delete(cacheKey);
     } else {
       cache.clear();
     }
-  },
+  }
 
   /**
    * Get cache stats (for debugging)
@@ -259,7 +281,7 @@ export const Storage = {
       size: cache.size,
       keys: Array.from(cache.keys())
     };
-  },
+  }
 
   /**
    * Legacy migration utility (REMOVED)
@@ -269,13 +291,16 @@ export const Storage = {
     // Migration no longer supported - all data is in Supabase
     return false;
   }
-};
+}
+
+// Legacy object export for backward compatibility
+export const LegacyStorage = new Storage();
 
 /**
  * Synchronous localStorage-like API for backward compatibility
  * Uses cache for immediate responses, background syncs with database
  * 
- * NOTE: This is for gradual migration only. Prefer async Storage API for new code.
+ * NOTE: This is for gradual migration only. Prefer async Storage class for new code.
  */
 export const SyncStorage = {
   /**
@@ -285,7 +310,7 @@ export const SyncStorage = {
    * @returns Cached value or default
    */
   getSync<T>(key: string, defaultValue: T | null = null): T | null {
-    const userId = getUserId();
+    const userId = getAnonymousUserId();
     const cacheKey = createCacheKey(userId, key);
     const cached = cache.get(cacheKey);
     
@@ -306,7 +331,7 @@ export const SyncStorage = {
    * @param value Value to store
    */
   setSync(key: string, value: any): void {
-    const userId = getUserId();
+    const userId = getAnonymousUserId();
     const cacheKey = createCacheKey(userId, key);
     
     // Update cache immediately
@@ -323,10 +348,10 @@ export const SyncStorage = {
  * Pre-load commonly used keys into cache for better performance
  * Call this on app initialization
  */
-export async function preloadStorage(keys: string[]): Promise<void> {
-  
+export async function preloadStorage(keys: string[], userId?: string): Promise<void> {
+  const storage = new Storage(userId);
   const promises = keys.map(key => 
-    Storage.get(key).catch(error => {
+    storage.get(key).catch(error => {
       return null;
     })
   );

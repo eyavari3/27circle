@@ -62,7 +62,8 @@ export default function PreferencesClient({ initialData }: PreferencesClientProp
       } else {
         try {
           const { Storage } = await import('@/lib/storage');
-          const saved = await Storage.get<string[]>('dev-user-preferences', []);
+          const storage = new Storage();
+          const saved = await storage.get<string[]>('dev-user-preferences', []);
           if (saved && saved.length > 0) {
             setSelectedPreferences(saved);
           }
@@ -99,7 +100,8 @@ export default function PreferencesClient({ initialData }: PreferencesClientProp
       // Also save to Storage utility for dev/prod parity
       try {
         const { Storage } = await import('@/lib/storage');
-        await Storage.set('dev-user-preferences', selectedPreferences);
+        const storage = new Storage();
+        await storage.set('dev-user-preferences', selectedPreferences);
         console.log('✅ Preferences saved to storage:', selectedPreferences);
       } catch (error) {
         console.error('Error saving preferences to storage:', error);

@@ -21,15 +21,14 @@ export async function saveOnboardingState(state: Partial<OnboardingState>): Prom
     const updated = { ...existing, ...state };
     
     const { Storage } = await import('./storage');
-    const success = await Storage.set(STORAGE_KEY, updated);
+    const storage = new Storage();
+    const success = await storage.set(STORAGE_KEY, updated);
     
     if (success) {
-      console.log('💾 Saved onboarding state to storage:', updated);
-    } else {
-      console.error('❌ Failed to save onboarding state to storage');
+      // Success - no console spam
     }
   } catch (error) {
-    console.error('Failed to save onboarding state:', error);
+    // Silent error handling to prevent console spam
   }
 }
 
@@ -46,7 +45,8 @@ export async function getOnboardingState(): Promise<OnboardingState> {
 
   try {
     const { Storage } = await import('./storage');
-    const stored = await Storage.get<OnboardingState>(STORAGE_KEY, null);
+    const storage = new Storage();
+    const stored = await storage.get<OnboardingState>(STORAGE_KEY, null);
     
     if (!stored) {
       return defaultState;
@@ -58,7 +58,6 @@ export async function getOnboardingState(): Promise<OnboardingState> {
       hasCompletedAuth: stored.hasCompletedAuth || false
     };
   } catch (error) {
-    console.error('Failed to get onboarding state from storage:', error);
     return defaultState;
   }
 }
@@ -68,15 +67,10 @@ export async function clearOnboardingState(): Promise<void> {
   
   try {
     const { Storage } = await import('./storage');
-    const success = await Storage.remove(STORAGE_KEY);
-    
-    if (success) {
-      console.log('🗑️ Cleared onboarding state from storage');
-    } else {
-      console.error('❌ Failed to clear onboarding state from storage');
-    }
+    const storage = new Storage();
+    await storage.remove(STORAGE_KEY);
   } catch (error) {
-    console.error('Failed to clear onboarding state:', error);
+    // Silent error handling
   }
 }
 
@@ -107,7 +101,6 @@ export async function addCuriositySelection(interests: string[]): Promise<void> 
       curiositySelections: allSelections
     });
   } catch (error) {
-    console.error('Failed to add curiosity selection:', error);
     // Fallback: try to save just the new interests
     try {
       await saveOnboardingState({
@@ -115,7 +108,7 @@ export async function addCuriositySelection(interests: string[]): Promise<void> 
         isInOnboarding: true
       });
     } catch (fallbackError) {
-      console.error('Fallback save also failed:', fallbackError);
+      // Silent fallback error handling
     }
   }
 }
@@ -126,7 +119,6 @@ export async function isOnboardingStateValid(): Promise<boolean> {
     const state = await getOnboardingState();
     return state.isInOnboarding && state.curiositySelections.length > 0;
   } catch (error) {
-    console.error('Error checking onboarding state validity:', error);
     return false;
   }
 }

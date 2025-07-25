@@ -26,6 +26,31 @@ export default function ProfilePage() {
           hasAuth: true  // Assumes user is authenticated to reach this page
         });
         
+        // NEW: Get authenticated user for migration
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        // NEW: Migrate temporary onboarding data if user is authenticated
+        if (user && !user.id.startsWith('anon-')) {
+          const tempKeys = ['onboarding_state', 'onboarding_curiosity'];
+          
+          for (const key of tempKeys) {
+            try {
+              const tempData = sessionStorage.getItem(`temp_${key}`);
+              if (tempData) {
+                const { Storage } = await import('@/lib/storage');
+                const storage = new Storage(user.id);
+                await storage.set(key, JSON.parse(tempData));
+                sessionStorage.removeItem(`temp_${key}`);
+                console.log('💾 DATA:', { action: 'migrate_temp_data', key, success: true });
+              }
+            } catch (error) {
+              console.log('💾 DATA:', { action: 'migrate_temp_data', key, success: false });
+            }
+          }
+        }
+        
         // Mark that auth has been completed
         await setAuthCompleted();
         
@@ -35,26 +60,28 @@ export default function ProfilePage() {
           // Merge onboarding selections with any existing preferences using Storage utility
           try {
             const { Storage } = await import('@/lib/storage');
-            const existingSaved = await Storage.get<string[]>('dev-user-preferences', []);
+            const storage = new Storage(user?.id);
+            const existingSaved = await storage.get<string[]>('dev-user-preferences', []);
             
             // Merge arrays and remove duplicates
             const allPreferences = [...new Set([...(existingSaved || []), ...onboardingState.curiositySelections])];
             
-            await Storage.set('dev-user-preferences', allPreferences);
+            await storage.set('dev-user-preferences', allPreferences);
           } catch (storageError) {
             // Continue without storage - not critical for app function
           }
-        } else if (onboardingState.isInOnboarding) {
         }
         
         // Load existing account data if available using Storage utility
         try {
           const { Storage } = await import('@/lib/storage');
-          const accountData = await Storage.get<typeof formData>('dev-user-account', null);
+          const storage = new Storage(user?.id);
+          const accountData = await storage.get<typeof formData>('dev-user-account', null);
           if (accountData) {
             setFormData(accountData);
           }
         } catch (storageError) {
+          // Continue without storage
         }
       } catch (error) {
         // Don't block the UI, just log the error
@@ -101,8 +128,13 @@ export default function ProfilePage() {
     try {
       // Save to Storage utility for dev/prod parity
       try {
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        
         const { Storage } = await import('@/lib/storage');
-        await Storage.set('dev-user-account', formData);
+        const storage = new Storage(user?.id);
+        await storage.set('dev-user-account', formData);
       } catch (storageError) {
         // Continue - storage failure is not critical for profile submission
       }

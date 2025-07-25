@@ -46,7 +46,8 @@ export default function InterestSelection({
     async function loadPreferences() {
       try {
         const { Storage } = await import('@/lib/storage');
-        const preferences = await Storage.get<string[]>('dev-user-preferences', []);
+        const storage = new Storage();
+        const preferences = await storage.get<string[]>('dev-user-preferences', []);
         
         if (preferences && preferences.length > 0) {
           // Only select preferences that match current page options
@@ -90,7 +91,8 @@ export default function InterestSelection({
         // Also save to Storage utility for dev/prod parity
         try {
           const { Storage } = await import('@/lib/storage');
-          const existingSaved = await Storage.get<string[]>('dev-user-preferences', []);
+          const storage = new Storage();
+          const existingSaved = await storage.get<string[]>('dev-user-preferences', []);
           
           const currentPageKeys = options.map(opt => opt.interestKey);
           const otherPagePreferences = (existingSaved || []).filter((pref: string) => 
@@ -98,7 +100,7 @@ export default function InterestSelection({
           );
           const allPreferences = [...otherPagePreferences, ...selected];
           
-          await Storage.set('dev-user-preferences', allPreferences);
+          await storage.set('dev-user-preferences', allPreferences);
           console.log('✅ Onboarding preferences saved to storage for auth flow:', allPreferences);
         } catch (storageError) {
           console.error('Error saving preferences to storage:', storageError);
@@ -120,8 +122,9 @@ export default function InterestSelection({
     // Save to Storage utility for dev/prod parity
     try {
       const { Storage } = await import('@/lib/storage');
+      const storage = new Storage();
       // Merge with existing preferences from other pages
-      const existingSaved = await Storage.get<string[]>('dev-user-preferences', []);
+      const existingSaved = await storage.get<string[]>('dev-user-preferences', []);
       
       // Remove any existing preferences that are from current page options
       const currentPageKeys = options.map(opt => opt.interestKey);
@@ -130,7 +133,7 @@ export default function InterestSelection({
       );
       const allPreferences = [...otherPagePreferences, ...selected];
       
-      await Storage.set('dev-user-preferences', allPreferences);
+      await storage.set('dev-user-preferences', allPreferences);
       console.log('✅ Onboarding preferences merged and saved to storage:', allPreferences);
     } catch (storageError) {
       console.error('Error saving preferences to storage:', storageError);

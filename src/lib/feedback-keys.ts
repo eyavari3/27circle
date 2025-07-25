@@ -71,9 +71,10 @@ export async function getFeedbackRecord(
   
   // Import Storage dynamically to avoid circular dependencies
   const { Storage } = await import('./storage');
+  const storage = new Storage(userId);
   
   // Get data from Supabase storage
-  return await Storage.get(key, null);
+  return await storage.get(key, null);
 }
 
 /**
@@ -101,7 +102,8 @@ export async function saveFeedbackRecord(
   try {
     // Import Storage dynamically to avoid circular dependencies
     const { Storage } = await import('./storage');
-    const success = await Storage.set(key, record);
+    const storage = new Storage(userId);
+    const success = await storage.set(key, record);
     
     if (success) {
       console.log('✅ Saved feedback record to Supabase:', { key, eventId });

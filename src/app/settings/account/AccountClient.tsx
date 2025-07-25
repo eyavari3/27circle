@@ -42,7 +42,8 @@ export default function AccountClient({ initialData }: AccountClientProps) {
         // Fallback: check Storage utility
         try {
           const { Storage } = await import('@/lib/storage');
-          const saved = await Storage.get<AccountData>('dev-user-account', null);
+          const storage = new Storage();
+          const saved = await storage.get<AccountData>('dev-user-account', null);
           if (saved) {
             setAccountData(saved);
           }
@@ -81,7 +82,8 @@ export default function AccountClient({ initialData }: AccountClientProps) {
       // Also save to Storage utility for dev/prod parity
       try {
         const { Storage } = await import('@/lib/storage');
-        await Storage.set('dev-user-account', accountData);
+        const storage = new Storage();
+        await storage.set('dev-user-account', accountData);
         console.log('✅ Account data saved to storage:', accountData);
       } catch (storageError) {
         console.error('Error saving account to storage:', storageError);
@@ -103,7 +105,8 @@ export default function AccountClient({ initialData }: AccountClientProps) {
     // Clear Storage utility data
     try {
       const { Storage } = await import('@/lib/storage');
-      await Storage.clear();
+      const storage = new Storage();
+      await storage.clear();
       console.log('🗑️ All storage data cleared');
     } catch (error) {
       console.error('Error clearing storage data:', error);
