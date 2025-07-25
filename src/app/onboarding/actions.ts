@@ -84,16 +84,18 @@ export async function submitProfile(profileData: {
     const { data: userData, error: fetchError } = await serviceSupabase
       .from('users')
       .select('phone_number, is_test')
-      .eq('id', user.id)
-      .maybeSingle();
+      .eq('id', user.id);
+
+    const userRecord = userData && userData.length > 0 ? userData[0] : null;
 
     console.log('🔍 DEBUG: User lookup result:', { 
       userData,
+      userRecord,
       fetchError,
-      userExists: !!userData 
+      userExists: !!userRecord 
     });
 
-    if (userData?.is_test || (userData?.phone_number && isTestPhoneNumber(userData.phone_number))) {
+    if (userRecord?.is_test || (userRecord?.phone_number && isTestPhoneNumber(userRecord.phone_number))) {
       console.log('🔍 DEBUG: Detected test user, switching to service client');
       targetSupabase = serviceSupabase; // Use service role for ALL test user operations
       clientType = 'service';
@@ -102,11 +104,12 @@ export async function submitProfile(profileData: {
 
   // Check if user record exists before update
   console.log('🔍 DEBUG: Checking if user record exists before update');
-  const { data: existingUser, error: checkError } = await targetSupabase
+  const { data: existingUsers, error: checkError } = await targetSupabase
     .from('users')
     .select('id, full_name, phone_number')
-    .eq('id', user.id)
-    .maybeSingle();
+    .eq('id', user.id);
+
+  const existingUser = existingUsers && existingUsers.length > 0 ? existingUsers[0] : null;
 
   console.log('🔍 DEBUG: User record check:', {
     clientType,
