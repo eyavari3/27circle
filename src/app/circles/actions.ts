@@ -63,10 +63,21 @@ export async function joinWaitlist(timeSlot: string, userId?: string): Promise<{
     return { error: "The deadline to join this circle has passed." };
   }
 
+    // NEW: Prevent anonymous users from hitting the database
+    if (effectiveUserId.startsWith('anon-')) {
+      console.log(`🚫 BLOCKED: Anonymous user cannot join waitlist database:`, {
+        user_id: effectiveUserId,
+        time_slot: timeSlot
+      });
+      return {
+        error: 'Please authenticate to join waitlist'
+      };
+    }
+
     console.log(`🔄 ATTEMPTING DATABASE INSERT:`, {
       user_id: effectiveUserId,
       time_slot: timeSlot,
-      isAnonymous: effectiveUserId.startsWith('anon-')
+      isAuthenticated: true
     });
 
     const { error, data } = await supabase
@@ -150,6 +161,17 @@ export async function leaveWaitlist(timeSlot: string, userId?: string): Promise<
   // Check if deadline has passed
   if (currentTime >= matchingSlot.deadline) {
     return { error: "The deadline has passed. You cannot leave this waitlist." };
+  }
+
+  // NEW: Prevent anonymous users from hitting the database
+  if (effectiveUserId.startsWith('anon-')) {
+    console.log(`🚫 BLOCKED: Anonymous user cannot leave waitlist database:`, {
+      user_id: effectiveUserId,
+      time_slot: timeSlot
+    });
+    return {
+      error: 'Please authenticate to manage waitlist'
+    };
   }
 
     const { error } = await supabase

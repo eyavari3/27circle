@@ -33,7 +33,7 @@ export default function ProfilePage() {
         
         // NEW: Migrate temporary onboarding data if user is authenticated
         if (user && !user.id.startsWith('anon-')) {
-          const tempKeys = ['onboarding_state', 'onboarding_curiosity'];
+          const tempKeys = ['onboarding-state', 'dev-user-preferences', 'dev-user-account'];
           
           for (const key of tempKeys) {
             try {

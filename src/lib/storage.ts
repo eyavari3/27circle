@@ -62,8 +62,8 @@ export class Storage {
    * @returns Promise<any>
    */
   async get<T>(key: string, defaultValue: T | null = null): Promise<T | null> {
-    // NEW: For pre-auth onboarding, check sessionStorage first
-    if (key.startsWith('onboarding_') && this.userId.startsWith('anon-')) {
+    // NEW: For ALL anonymous users, use sessionStorage only (no database access)
+    if (this.userId.startsWith('anon-')) {
       try {
         const stored = sessionStorage.getItem(`temp_${key}`);
         return stored ? JSON.parse(stored) : defaultValue;
@@ -123,8 +123,8 @@ export class Storage {
    * @returns Promise<boolean> Success status
    */
   async set(key: string, value: any): Promise<boolean> {
-    // NEW: For pre-auth onboarding, use sessionStorage only
-    if (key.startsWith('onboarding_') && this.userId.startsWith('anon-')) {
+    // NEW: For ALL anonymous users, use sessionStorage only (no database access)
+    if (this.userId.startsWith('anon-')) {
       try {
         sessionStorage.setItem(`temp_${key}`, JSON.stringify(value));
         return true;
@@ -174,6 +174,16 @@ export class Storage {
    * @returns Promise<boolean> Success status
    */
   async remove(key: string): Promise<boolean> {
+    // NEW: For anonymous users, remove from sessionStorage only
+    if (this.userId.startsWith('anon-')) {
+      try {
+        sessionStorage.removeItem(`temp_${key}`);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
     const cacheKey = createCacheKey(this.userId, key);
     
     // Remove from cache immediately
@@ -233,6 +243,23 @@ export class Storage {
    * @returns Promise<boolean>
    */
   async clear(): Promise<boolean> {
+    // NEW: For anonymous users, clear sessionStorage only
+    if (this.userId.startsWith('anon-')) {
+      try {
+        // Clear all temp_ prefixed items for this anonymous user
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key && key.startsWith('temp_')) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(key => sessionStorage.removeItem(key));
+        return true;
+      } catch {
+        return false;
+      }
+    }
     
     // Clear cache for this user
     const keysToDelete: string[] = [];
