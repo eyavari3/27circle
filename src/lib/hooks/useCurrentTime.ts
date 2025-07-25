@@ -76,8 +76,6 @@ export function useCurrentTime(initialTime?: Date) {
       
       baselineRef.current = newBaseline;
       if (isDebug) {
-        console.log('🔄 Time baseline resynced:', new Date(newBaseline.time), 
-          timeOffset ? `(APP_TIME_OFFSET: ${timeOffset})` : '');
       }
     } catch (error) {
       // Fallback to Date.now() if timezone computation fails
@@ -87,7 +85,6 @@ export function useCurrentTime(initialTime?: Date) {
         perf: performanceNow()
       };
       if (isDebug) {
-        console.error('⚠️ Time resync error, using fallback:', error);
       }
     }
   }, [isDebug]);
@@ -106,7 +103,6 @@ export function useCurrentTime(initialTime?: Date) {
     } catch (error) {
       // Fallback to current time if calculation fails
       if (isDebug) {
-        console.error('⚠️ getNow error, using fallback:', error);
       }
       return new Date();
     }
@@ -118,7 +114,6 @@ export function useCurrentTime(initialTime?: Date) {
   const startLiveUpdates = useCallback((callback: (now: Date) => void) => {
     // Log warning in debug mode if using fallback
     if (isDebug && typeof requestAnimationFrame === 'undefined') {
-      console.warn('⚠️ RAF not supported - using setTimeout fallback');
     }
     
     const loop = () => {
@@ -168,7 +163,6 @@ export function useCurrentTime(initialTime?: Date) {
       // Always resync on focus to catch system clock changes
       resyncBaseline();
       if (isDebug) {
-        console.log('🔍 Window focused - resyncing time baseline');
       }
     };
     
@@ -176,7 +170,6 @@ export function useCurrentTime(initialTime?: Date) {
     const handleOnline = () => {
       resyncBaseline();
       if (isDebug) {
-        console.log('🌐 Back online - resyncing time baseline');
       }
     };
 

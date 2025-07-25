@@ -20,6 +20,12 @@ export default function ProfilePage() {
   useEffect(() => {
     async function initializeProfile() {
       try {
+        console.log('🧭 NAV:', {
+          from: 'auth',
+          to: '/onboarding/profile',
+          hasAuth: true  // Assumes user is authenticated to reach this page
+        });
+        
         // Mark that auth has been completed
         await setAuthCompleted();
         
@@ -35,13 +41,10 @@ export default function ProfilePage() {
             const allPreferences = [...new Set([...(existingSaved || []), ...onboardingState.curiositySelections])];
             
             await Storage.set('dev-user-preferences', allPreferences);
-            console.log('✅ Merged onboarding curiosity selections to storage:', allPreferences);
           } catch (storageError) {
-            console.error('Error saving merged preferences to storage:', storageError);
             // Continue without storage - not critical for app function
           }
         } else if (onboardingState.isInOnboarding) {
-          console.warn('⚠️ User in onboarding flow but no curiosity selections found');
         }
         
         // Load existing account data if available using Storage utility
@@ -50,13 +53,10 @@ export default function ProfilePage() {
           const accountData = await Storage.get<typeof formData>('dev-user-account', null);
           if (accountData) {
             setFormData(accountData);
-            console.log('📋 Loaded existing account data from storage:', accountData);
           }
         } catch (storageError) {
-          console.error('Error accessing storage for account data:', storageError);
         }
       } catch (error) {
-        console.error('Error in profile page initialization:', error);
         // Don't block the UI, just log the error
       }
     }
@@ -103,9 +103,7 @@ export default function ProfilePage() {
       try {
         const { Storage } = await import('@/lib/storage');
         await Storage.set('dev-user-account', formData);
-        console.log('✅ Onboarding profile saved to storage:', formData);
       } catch (storageError) {
-        console.error('Error saving profile to storage:', storageError);
         // Continue - storage failure is not critical for profile submission
       }
       
@@ -117,7 +115,6 @@ export default function ProfilePage() {
           // Complete onboarding and clean up state
           await completeOnboarding();
         } catch (cleanupError) {
-          console.error('Error cleaning up onboarding state:', cleanupError);
           // Don't block navigation - cleanup failure is not critical
         }
         router.push("/circles");

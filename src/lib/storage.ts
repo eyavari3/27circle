@@ -60,12 +60,10 @@ export const Storage = {
     // Check cache first
     const cached = cache.get(cacheKey);
     if (cached && isCacheValid(cached)) {
-      console.log('📦 Storage cache hit:', key);
       return cached.value;
     }
     
     try {
-      console.log('🔍 Storage database fetch:', key);
       const { data, error } = await supabase
         .from('user_data')
         .select('value')
@@ -78,7 +76,6 @@ export const Storage = {
       
       // Handle empty results (no rows found)
       if (!data || data.length === 0) {
-        console.log('📭 Storage key not found:', key);
         return defaultValue;
       }
       
@@ -90,14 +87,11 @@ export const Storage = {
         timestamp: Date.now()
       });
       
-      console.log('✅ Storage fetch successful:', key);
       return value;
     } catch (error) {
-      console.error('❌ Storage fetch error:', key, error);
       
       // Return cached value even if expired, as fallback
       if (cached) {
-        console.log('🔄 Storage fallback to expired cache:', key);
         return cached.value;
       }
       
@@ -121,7 +115,6 @@ export const Storage = {
       timestamp: Date.now()
     });
     
-    console.log('💾 Storage optimistic update:', key);
     
     try {
       const { error } = await supabase
@@ -136,16 +129,13 @@ export const Storage = {
         });
       
       if (error) {
-        console.error('❌ Storage set error:', key, error);
         // Remove from cache on database error
         cache.delete(cacheKey);
         return false;
       }
       
-      console.log('✅ Storage set successful:', key);
       return true;
     } catch (error) {
-      console.error('❌ Storage set exception:', key, error);
       // Remove from cache on error
       cache.delete(cacheKey);
       return false;
@@ -172,14 +162,11 @@ export const Storage = {
         .eq('key', key);
       
       if (error) {
-        console.error('❌ Storage remove error:', key, error);
         return false;
       }
       
-      console.log('🗑️ Storage remove successful:', key);
       return true;
     } catch (error) {
-      console.error('❌ Storage remove exception:', key, error);
       return false;
     }
   },
@@ -208,13 +195,11 @@ export const Storage = {
         .eq('user_id', userId);
       
       if (error) {
-        console.error('❌ Storage getAllKeys error:', error);
         return [];
       }
       
       return data.map(row => row.key);
     } catch (error) {
-      console.error('❌ Storage getAllKeys exception:', error);
       return [];
     }
   },
@@ -242,14 +227,11 @@ export const Storage = {
         .eq('user_id', userId);
       
       if (error) {
-        console.error('❌ Storage clear error:', error);
         return false;
       }
       
-      console.log('🗑️ Storage clear successful for user:', userId);
       return true;
     } catch (error) {
-      console.error('❌ Storage clear exception:', error);
       return false;
     }
   },
@@ -263,10 +245,8 @@ export const Storage = {
       const userId = getUserId();
       const cacheKey = createCacheKey(userId, key);
       cache.delete(cacheKey);
-      console.log('🔄 Cache invalidated for key:', key);
     } else {
       cache.clear();
-      console.log('🔄 All cache invalidated');
     }
   },
 
@@ -312,13 +292,11 @@ export const SyncStorage = {
     if (cached) {
       // Trigger background refresh if cache is getting old
       if (!isCacheValid(cached)) {
-        Storage.get(key, defaultValue).catch(console.error);
       }
       return cached.value;
     }
     
     // Trigger background fetch
-    Storage.get(key, defaultValue).catch(console.error);
     return defaultValue;
   },
 
@@ -338,7 +316,6 @@ export const SyncStorage = {
     });
     
     // Background database sync
-    Storage.set(key, value).catch(console.error);
   }
 };
 
@@ -347,15 +324,12 @@ export const SyncStorage = {
  * Call this on app initialization
  */
 export async function preloadStorage(keys: string[]): Promise<void> {
-  console.log('🚀 Pre-loading storage keys:', keys);
   
   const promises = keys.map(key => 
     Storage.get(key).catch(error => {
-      console.error('Pre-load error for key:', key, error);
       return null;
     })
   );
   
   await Promise.all(promises);
-  console.log('✅ Storage pre-load complete');
 }

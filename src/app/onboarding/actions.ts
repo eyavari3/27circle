@@ -33,7 +33,6 @@ export async function saveUserInterests(interests: string[]): Promise<{ error: s
       return { error: null };
     }
     
-    console.error('Error saving user interests:', error.message);
     return { error: 'Could not save your interests. Please try again.' };
   }
 
@@ -46,11 +45,6 @@ export async function submitProfile(profileData: {
   dateOfBirth: string;
   location: string;
 }): Promise<{ error: string | null }> {
-  console.log('🔍 DEBUG: submitProfile called with:', { 
-    fullName: profileData.fullName,
-    gender: profileData.gender,
-    dateOfBirth: profileData.dateOfBirth 
-  });
 
   if (!profileData.fullName.trim() || !profileData.gender || !profileData.dateOfBirth) {
     return { error: 'Please fill in all required fields.' };
@@ -60,15 +54,15 @@ export async function submitProfile(profileData: {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   
-  console.log('🔍 DEBUG: Auth user:', { 
-    userId: user?.id,
-    email: user?.email,
-    phone: user?.phone 
+  console.log('💾 DATA:', {
+    action: 'profile_save_start',
+    hasUser: !!user,
+    client: 'regular'
   });
+  
 
   // For development: Skip auth check and return success
   if (!user) {
-    console.log('🔍 DEBUG: No authenticated user, returning early');
     return { error: null };
   }
 
@@ -77,7 +71,6 @@ export async function submitProfile(profileData: {
   let clientType = 'regular';
 
   if (isTestModeEnabled()) {
-    console.log('🔍 DEBUG: Test mode enabled, checking user type');
     
     // Use service role client to check if this is a test user (bypasses any RLS issues)
     const serviceSupabase = await createServiceClient();
@@ -88,22 +81,20 @@ export async function submitProfile(profileData: {
 
     const userRecord = userData && userData.length > 0 ? userData[0] : null;
 
-    console.log('🔍 DEBUG: User lookup result:', { 
-      userData,
-      userRecord,
-      fetchError,
-      userExists: !!userRecord 
-    });
 
     if (userRecord?.is_test || (userRecord?.phone_number && isTestPhoneNumber(userRecord.phone_number))) {
-      console.log('🔍 DEBUG: Detected test user, switching to service client');
       targetSupabase = serviceSupabase; // Use service role for ALL test user operations
       clientType = 'service';
+      
+      console.log('💾 DATA:', {
+        action: 'profile_save_start',
+        hasUser: !!user,
+        client: 'service'
+      });
     }
   }
 
   // Check if user record exists before update
-  console.log('🔍 DEBUG: Checking if user record exists before update');
   const { data: existingUsers, error: checkError } = await targetSupabase
     .from('users')
     .select('id, full_name, phone_number')
@@ -111,16 +102,9 @@ export async function submitProfile(profileData: {
 
   const existingUser = existingUsers && existingUsers.length > 0 ? existingUsers[0] : null;
 
-  console.log('🔍 DEBUG: User record check:', {
-    clientType,
-    existingUser,
-    checkError,
-    recordExists: !!existingUser
-  });
 
   // If no user record exists, we need to insert instead of update
   if (!existingUser) {
-    console.log('🔍 DEBUG: No user record found, attempting INSERT instead of UPDATE');
     const { error: insertError } = await targetSupabase
       .from('users')
       .insert({
@@ -132,18 +116,21 @@ export async function submitProfile(profileData: {
         phone_number: user.phone || null,
       });
 
+    console.log('💾 DATA:', {
+      action: 'profile_save_result',
+      success: !insertError,
+      operation: 'insert'
+    });
+
     if (insertError) {
-      console.error('🔍 DEBUG: Insert error:', insertError);
       return { error: 'Could not save your profile. Please try again.' };
     }
 
-    console.log('🔍 DEBUG: Successfully inserted new user record');
     revalidatePath('/circles');
     return { error: null };
   }
 
   // User exists, proceed with update
-  console.log('🔍 DEBUG: Attempting UPDATE with client type:', clientType);
   const { error } = await targetSupabase
     .from('users')
     .update({
@@ -154,18 +141,16 @@ export async function submitProfile(profileData: {
     })
     .eq('id', user.id);
 
+  console.log('💾 DATA:', {
+    action: 'profile_save_result',
+    success: !error,
+    operation: 'update'
+  });
+
   if (error) {
-    console.error('🔍 DEBUG: Update error details:', {
-      message: error.message,
-      code: error.code,
-      details: error.details,
-      hint: error.hint,
-      clientType
-    });
     return { error: 'Could not save your profile. Please try again.' };
   }
 
-  console.log('🔍 DEBUG: Profile update successful');
   revalidatePath('/circles');
   return { error: null };
 }
@@ -207,7 +192,6 @@ export async function ensureDevProfile(): Promise<{ error: string | null }> {
     .eq('id', user.id);
 
   if (error) {
-    console.error('Error creating dev profile:', error.message);
     return { error: 'Could not create dev profile' };
   }
 

@@ -1,14 +1,51 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { typography } from '@/lib/typography';
+import type { User } from '@supabase/supabase-js';
 
 export default function SettingsClient() {
   const router = useRouter();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [profileData, setProfileData] = useState<any>(null);
   const supabase = createClient();
+
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+        
+        if (user) {
+          // Check if user has profile data
+          const { data: profile } = await supabase
+            .from('users')
+            .select('full_name, gender, date_of_birth')
+            .eq('id', user.id)
+            .single();
+          
+          setProfileData(profile);
+        }
+        
+        console.log('🎯 CHECK:', {
+          point: 'settings_access',
+          hasAuth: !!user,
+          hasProfile: !!profileData
+        });
+      } catch (error) {
+        console.log('🎯 CHECK:', {
+          point: 'settings_access',
+          hasAuth: false,
+          hasProfile: false
+        });
+      }
+    }
+    
+    checkAuth();
+  }, [supabase]);
 
   const settingsItems = [
     {
@@ -36,22 +73,18 @@ export default function SettingsClient() {
           const { error } = await supabase.auth.signOut();
           
           if (error) {
-            console.error('Logout error:', error);
           } else {
-            console.log('✅ Successfully signed out from Supabase');
           }
           
           // Remove waitlist entries but keep preferences and account data
           if (process.env.NODE_ENV === 'development') {
             // Only remove waitlist-related data, preserve preferences and account info
             localStorage.removeItem('dev-waitlist');
-            console.log('🚪 Logout: Removed waitlist entries, kept preferences and account data');
           }
           
           // Navigate to login page
           router.push('/login');
         } catch (err) {
-          console.error('Unexpected logout error:', err);
           // Still navigate to login even if logout fails
           router.push('/login');
         }

@@ -48,17 +48,9 @@ export async function submitFeedback(data: FeedbackData) {
         });
 
       if (error) {
-        console.error('Database error:', error);
         return { error: 'Failed to save feedback to database' };
       }
 
-      console.log('📝 Feedback saved to Supabase:', {
-        userId,
-        eventId: data.eventId,
-        attendanceCount: data.attendanceCount,
-        didNotAttend: data.didNotAttend,
-        rating: data.rating,
-      });
       
       return { success: true };
     }
@@ -76,13 +68,11 @@ export async function submitFeedback(data: FeedbackData) {
       });
 
     if (error) {
-      console.error('Database error:', error);
       return { error: 'Failed to save feedback' };
     }
 
     return { success: true };
   } catch (error) {
-    console.error('Unexpected error:', error);
     return { error: 'An unexpected error occurred' };
   }
 }
@@ -116,15 +106,9 @@ export async function skipFeedback(eventId: string) {
         });
 
       if (error) {
-        console.error('Database error:', error);
         return { error: 'Failed to save skip status to database' };
       }
 
-      console.log('⏭️ Feedback skip saved to Supabase:', {
-        userId,
-        eventId,
-        skippedAt: new Date().toISOString(),
-      });
       
       return { success: true };
     }
@@ -142,13 +126,11 @@ export async function skipFeedback(eventId: string) {
       });
 
     if (error) {
-      console.error('Database error:', error);
       return { error: 'Failed to save skip status' };
     }
 
     return { success: true };
   } catch (error) {
-    console.error('Unexpected error:', error);
     return { error: 'An unexpected error occurred' };
   }
 }

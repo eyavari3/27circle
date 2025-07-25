@@ -34,7 +34,6 @@ export default function UpcomingCirclePage() {
           setSpark(result.spark);
         }
       } catch (err) {
-        console.error('Error fetching circle data:', err);
         setError('Failed to load circle information');
       } finally {
         setIsLoading(false);

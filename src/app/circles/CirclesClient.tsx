@@ -47,7 +47,6 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
   // Development-only render counting
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
-      console.count('🔄 CirclesClient render');
     }
   });
   
@@ -95,7 +94,6 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
           setLocation(result.location);
         }
       } catch (error) {
-        console.error('Error fetching location:', error);
         setLocationError('Failed to load location');
       }
     }
@@ -120,7 +118,6 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
           const feedbackRecord = await getFeedbackRecord('dev-user-id', timeSlotString, slot.timeSlot.time);
           statusUpdates[slotKey] = feedbackRecord && (feedbackRecord.status === 'submitted' || feedbackRecord.status === 'skipped');
         } catch (error) {
-          console.error('Error loading feedback status for slot:', slotKey, error);
           statusUpdates[slotKey] = false;
         }
       }
@@ -144,7 +141,6 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
           // For now, just mark as loaded
           setIsLoaded(true);
         } catch (e) {
-          console.error('Error loading anonymous user waitlist:', e);
           setIsLoaded(true);
         }
       } else {
@@ -219,13 +215,6 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
       const feedbackSubmitted = feedbackStatus[slotKey] || false;
 
       // DEBUG: Log button state computation for each slot
-      console.log(`🔍 BUTTON STATE DEBUG for ${timeSlot.slot}:`, {
-        currentTime: currentTime.toLocaleTimeString(),
-        deadline: timeSlot.deadline.toLocaleTimeString(),
-        isOnWaitlist: slot.isOnWaitlist,
-        originalAssignedCircleId: slot.assignedCircleId,
-        deadlinePassed: currentTime >= timeSlot.deadline
-      });
 
       // Simulate assignedCircleId for development (only if user is on waitlist AND deadline has passed)
       let assignedCircleId = slot.assignedCircleId;
@@ -236,15 +225,8 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
         const hour = slot.timeSlot.time.getHours();
         const timeSlotStr = hour === 11 ? '11AM' : hour === 14 ? '2PM' : '5PM';
         assignedCircleId = `${dateStr}_${timeSlotStr}_Circle_1`;
-        console.log(`✅ SIMULATED CIRCLE ASSIGNMENT for ${timeSlotStr}:`, assignedCircleId);
       }
 
-      console.log(`📋 METHOD 7 INPUT for ${timeSlot.slot}:`, {
-        timeSlot: timeSlot.slot,
-        isOnWaitlist: slot.isOnWaitlist,
-        assignedCircleId,
-        feedbackSubmitted
-      });
 
       // Use Method 7 unified button state function
       const buttonStateResult = getButtonState(
@@ -257,12 +239,6 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
         feedbackSubmitted
       );
 
-      console.log(`🎯 METHOD 7 OUTPUT for ${timeSlot.slot}:`, {
-        buttonState: buttonStateResult.buttonState,
-        buttonText: buttonStateResult.buttonText,
-        middleText: buttonStateResult.middleText,
-        isDisabled: buttonStateResult.isDisabled
-      });
 
       return {
         ...slot,
@@ -407,7 +383,6 @@ export default function CirclesClient({ initialTimeSlots, serverTime, authentica
         const feedbackRecord = await getFeedbackRecord('dev-user-id', timeSlotString, slot.timeSlot.time);
         statusUpdates[slotKey] = feedbackRecord && (feedbackRecord.status === 'submitted' || feedbackRecord.status === 'skipped');
       } catch (error) {
-        console.error('Error loading feedback status for slot:', slotKey, error);
       }
     }
 

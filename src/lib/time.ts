@@ -203,7 +203,6 @@ export function getCurrentPSTTime(): Date {
   try {
     return newGetCurrentPSTTimeImplementation();
   } catch (error) {
-    console.error('🚨 New timezone implementation failed, falling back to original:', error);
     return _originalGetCurrentPSTTime();
   }
 }
@@ -234,7 +233,6 @@ export function toPST(date: Date): Date {
   try {
     return newToPSTImplementation(date);
   } catch (error) {
-    console.error('🚨 New toPST implementation failed, falling back to original:', error);
     return _originalToPST(date);
   }
 }
@@ -247,7 +245,6 @@ export function pstToUTC(pstDate: Date): Date {
   try {
     return newPstToUTCImplementation(pstDate);
   } catch (error) {
-    console.error('🚨 New pstToUTC implementation failed, falling back to original:', error);
     return _originalPstToUTC(pstDate);
   }
 }
@@ -272,7 +269,6 @@ export function createTimeSlots(displayDate?: Date): TimeSlot[] {
   try {
     return newCreateTimeSlotsImplementation(displayDate);
   } catch (error) {
-    console.error('🚨 New createTimeSlots implementation failed, falling back to original:', error);
     return _originalCreateTimeSlots(displayDate);
   }
 }
@@ -481,14 +477,6 @@ export function getCurrentFeedbackWindow(currentTime?: Date): FeedbackWindow | n
     const feedbackEndTime = new Date(slot.time);
     feedbackEndTime.setHours(20, 0, 0, 0); // 8PM PST
     
-    console.log(`📅 Event timing for ${slot.slot}:`, {
-      eventStart: slot.time.toLocaleTimeString(),
-      eventEnd: eventEndTime.toLocaleTimeString(), 
-      feedbackStart: feedbackStartTime.toLocaleTimeString(),
-      feedbackEnd: feedbackEndTime.toLocaleTimeString(),
-      currentTime: time.toLocaleTimeString(),
-      inWindow: time >= feedbackStartTime && time < feedbackEndTime
-    });
     
     // Check if current time is in the feedback window
     if (time >= feedbackStartTime && time < feedbackEndTime) {
@@ -687,22 +675,6 @@ export function getButtonState(
   const duringEvent = isDuringEvent(timeSlot, time);
   const afterEvent = isAfterEvent(timeSlot, time);
   
-  console.log(`⏰ METHOD 7 DETAILED ANALYSIS for ${timeSlot.slot}:`, {
-    input: {
-      isOnWaitlist: slot.isOnWaitlist,
-      assignedCircleId: slot.assignedCircleId,
-      feedbackSubmitted,
-      currentTime: time.toLocaleTimeString()
-    },
-    phases: {
-      beforeDeadline,
-      duringEvent,
-      afterEvent,
-      deadlineTime: timeSlot.deadline.toLocaleTimeString(),
-      eventTime: timeSlot.time.toLocaleTimeString()
-    },
-    pathTaken: beforeDeadline ? 'BEFORE_DEADLINE' : duringEvent ? 'DURING_EVENT' : 'AFTER_EVENT'
-  });
   
   if (isBeforeDeadline(timeSlot, time)) {
     // RSVP Phase: Users can join or leave waitlist

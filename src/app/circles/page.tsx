@@ -44,19 +44,12 @@ export default async function CirclesPage() {
   
   if (user) {
     // FORCE FIX: Use service client to bypass RLS issues
-    console.log(`🔧 ATTEMPTING SERVICE CLIENT QUERY for user ${user.id}`);
     const { data: wlData, error: wlError } = await serviceSupabase
       .from("waitlist_entries")
       .select("*")
       .eq("user_id", user.id)
       .gte("time_slot", startOfDay.toISOString());
     
-    console.log(`🗄️ SERVICE CLIENT WAITLIST QUERY for user ${user.id}:`, {
-      success: !wlError,
-      error: wlError?.message,
-      entriesFound: wlData?.length || 0,
-      entries: wlData
-    });
     
     waitlistEntries = wlData;
     

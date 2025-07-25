@@ -73,7 +73,6 @@ export default function FeedbackClient({ timeSlot, eventId }: FeedbackClientProp
     try {
       await submitFeedback(feedbackData);
     } catch (err) {
-      console.error('Background server logging failed:', err);
       // Don't show error to user since main storage succeeded
     }
   };
@@ -100,7 +99,6 @@ export default function FeedbackClient({ timeSlot, eventId }: FeedbackClientProp
     try {
       await skipFeedback(eventId);
     } catch (err) {
-      console.error('Background server logging failed:', err);
       // Don't show error to user since main storage succeeded
     }
   };
